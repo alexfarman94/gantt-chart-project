@@ -17,7 +17,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const allModules = ['Core HR', 'Workforce Planning', 'Compensation', 'Time & Attendance', 'Talent', 'Hiring', 'Learning', 'UK Payroll', 'Sandbox'];
+const allModules = ['Core HR', 'Workforce Planning', 'Compensation', 'Time & Attendance', 'Talent', 'Hiring', 'Learning', 'UK Payroll', 'Sandbox', 'Payroll Hub'];
 const moduleColors = {
     'Core HR': 'bg-sky-500',
     'Workforce Planning': 'bg-violet-500',
@@ -28,7 +28,8 @@ const moduleColors = {
     'Learning': 'bg-indigo-500',
     'UK Payroll': 'bg-fuchsia-500',
     'Sandbox': 'bg-slate-500',
-    'Performance': 'bg-pink-500' // Kept for legacy if needed
+    'Performance': 'bg-pink-500', // Kept for legacy if needed
+    'Payroll Hub': 'bg-cyan-500'
 };
 
 
@@ -112,7 +113,7 @@ function getInitialTasks() {
     return [
         { id: now(), name: 'Project Kick-off', start: 0, duration: 1, color: 'bg-green-500', children: [], isExpanded: false },
         { 
-            id: now(), name: 'Core HR', start: 1, duration: 4, color: moduleColors['Core HR'], isExpanded: false,
+            id: now(), name: 'Core HR', start: 1, duration: 12, color: moduleColors['Core HR'], isExpanded: false,
             children: [
                 { id: now(), name: 'Onboarding Workflow Setup', start: 1, duration: 2, color: 'bg-sky-400' },
                 { id: now(), name: 'Custom Fields Configuration', start: 2, duration: 2, color: 'bg-sky-400' },
@@ -161,7 +162,7 @@ function getInitialTasks() {
             }
         },
         {
-            id: now(), name: 'Workforce Planning', start: 2, duration: 7, color: moduleColors['Workforce Planning'], children: [], isExpanded: false,
+            id: now(), name: 'Workforce Planning', start: 2, duration: 8, color: moduleColors['Workforce Planning'], children: [], isExpanded: false,
             details: {
                 title: 'Workforce Planning Workshops',
                 sections: [
@@ -175,7 +176,7 @@ function getInitialTasks() {
             }
         },
         { 
-            id: now(), name: 'Compensation', start: 3, duration: 5, color: moduleColors['Compensation'], isExpanded: false,
+            id: now(), name: 'Compensation', start: 3, duration: 6, color: moduleColors['Compensation'], isExpanded: false,
             children: [
                 { id: now(), name: 'Compensation Benchmarking', start: 3, duration: 2, color: 'bg-amber-400' },
                 { id: now(), name: 'Salary Structure Setup', start: 5, duration: 2, color: 'bg-amber-400' },
@@ -204,7 +205,7 @@ function getInitialTasks() {
             }
         },
         {
-            id: now(), name: 'Talent', start: 5, duration: 3, color: moduleColors['Talent'], children: [], isExpanded: false,
+            id: now(), name: 'Talent', start: 5, duration: 4, color: moduleColors['Talent'], children: [], isExpanded: false,
             details: {
                 title: 'Talent Workshops',
                 sections: [
@@ -230,7 +231,7 @@ function getInitialTasks() {
             }
         },
         {
-            id: now(), name: 'Learning', start: 7, duration: 5, color: moduleColors['Learning'], children: [], isExpanded: false,
+            id: now(), name: 'Learning', start: 7, duration: 6, color: moduleColors['Learning'], children: [], isExpanded: false,
             details: {
                 title: 'Learning Workshops',
                 sections: [
@@ -242,6 +243,17 @@ function getInitialTasks() {
         },
         {
             id: now(), name: 'UK Payroll', start: 8, duration: 4, color: moduleColors['UK Payroll'], children: [], isExpanded: false,
+            details: {
+                title: 'Payroll Hub Workshops',
+                sections: [
+                    { heading: 'Discovery', content: "Review and understand your payroll cycles, reporting requirements and current employee data to support Payroll Hub Implementation." },
+                    { heading: 'Payroll Hub Integration', content: "Workshop and build your first Hibob payroll hub report configuration, including field mapping, data upload, and cycle setup." },
+                    { heading: 'Validation', content: "Review and run payroll in parallel with Bob to validate data flows between Bob and your payroll solution." }
+                ]
+            }
+        },
+        {
+            id: now(), name: 'Payroll Hub', start: 8, duration: 4, color: moduleColors['Payroll Hub'], children: [], isExpanded: false,
             details: {
                 title: 'Payroll Hub Workshops',
                 sections: [
@@ -636,15 +648,6 @@ function handleOpenMilestoneModal(milestoneId = null) {
     const labelInput = document.getElementById('milestone-label-input');
     const weekInput = document.getElementById('milestone-week-input');
     const deleteBtn = document.getElementById('delete-milestone-btn');
-    const taskSelect = document.getElementById('milestone-task-select');
-
-    taskSelect.innerHTML = '';
-    (state.tasks || []).forEach(task => {
-        const option = document.createElement('option');
-        option.value = task.id;
-        option.textContent = task.name;
-        taskSelect.appendChild(option);
-    });
 
     if (milestoneId) {
         const milestone = (state.milestones || []).find(m => m.id == milestoneId);
@@ -653,7 +656,6 @@ function handleOpenMilestoneModal(milestoneId = null) {
             idInput.value = milestone.id;
             labelInput.value = milestone.label;
             weekInput.value = milestone.week;
-            taskSelect.value = milestone.taskId;
             deleteBtn.classList.remove('hidden');
         }
     } else {
@@ -673,12 +675,11 @@ function handleCloseMilestoneModal() {
 
 function handleSaveMilestone() {
     const id = document.getElementById('milestone-id').value;
-    const taskId = document.getElementById('milestone-task-select').value;
     const label = document.getElementById('milestone-label-input').value.trim();
     const week = parseInt(document.getElementById('milestone-week-input').value);
 
-    if (!label || !taskId || isNaN(week) || week < 1 || week > state.totalWeeks) {
-        showInfoModal('Invalid Input', `Please select a module and provide a valid label and week number (1-${state.totalWeeks}).`);
+    if (!label || isNaN(week) || week < 1 || week > state.totalWeeks) {
+        showInfoModal('Invalid Input', `Please provide a valid label and week number (1-${state.totalWeeks}).`);
         return;
     }
 
@@ -686,9 +687,11 @@ function handleSaveMilestone() {
     
     if (id) {
         const index = state.milestones.findIndex(m => m.id == id);
-        if(index > -1) state.milestones[index] = { ...state.milestones[index], label, week, taskId };
+        if(index > -1) state.milestones[index] = { ...state.milestones[index], label, week };
     } else {
-        state.milestones.push({ id: Date.now(), label, week, taskId });
+        // Since there's no task dropdown, we can't associate it with a specific task
+        // This is a placeholder; you might want to associate it differently
+        state.milestones.push({ id: Date.now(), label, week, taskId: null });
     }
     saveState();
     handleCloseMilestoneModal();

@@ -5,13 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collaborative HiBob Implementation Timeline</title>
     
-    <!-- Link to your CSS file -->
     <link rel="stylesheet" href="style.css">
 
-    <!-- Tailwind CSS (required for utility classes) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -22,7 +19,6 @@
             <p class="text-slate-500 mt-2">A real-time, interactive Gantt chart for project planning.</p>
         </header>
 
-        <!-- Controls Section -->
         <div class="grid md:grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div class="bg-white p-6 rounded-xl shadow-sm lg:col-span-2">
                 <h2 class="font-semibold text-lg mb-4">Available Modules</h2>
@@ -40,29 +36,21 @@
             </div>
         </div>
         
-        <!-- Gantt Chart Section -->
         <div class="bg-white rounded-xl shadow-sm overflow-x-auto relative">
             <div id="gantt-chart-container" class="p-4 min-w-[800px] relative">
-                <!-- Chart will be rendered here by JavaScript -->
-            </div>
+                </div>
         </div>
         
-        <!-- Collaboration Info Section -->
         <div class="text-center mt-4 text-xs text-slate-400">
             <p>App ID: <span id="app-id-display" class="font-mono">loading...</span></p>
             <p>Your User ID: <span id="user-id-display" class="font-mono">loading...</span></p>
         </div>
     </div>
 
-    <!-- Modal for adding/editing milestones -->
     <div id="milestone-modal" class="modal-overlay hidden">
         <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm">
             <h3 id="modal-title" class="text-xl font-bold mb-4">Add Milestone</h3>
             <input type="hidden" id="milestone-id">
-            <div class="mb-4">
-                <label for="milestone-task-select" class="block mb-2 font-medium">Associated Module</label>
-                <select id="milestone-task-select" class="w-full border rounded-md p-2 bg-white"></select>
-            </div>
             <div class="mb-4">
                 <label for="milestone-label-input" class="block mb-2 font-medium">Label</label>
                 <input type="text" id="milestone-label-input" class="w-full border rounded-md p-2" placeholder="e.g., Phase 1 Complete">
@@ -79,18 +67,15 @@
         </div>
     </div>
 
-    <!-- Generic Confirmation/Information Modal -->
     <div id="confirmation-modal" class="modal-overlay hidden">
         <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm text-center">
             <h3 id="confirmation-title" class="text-xl font-bold mb-2">Are you sure?</h3>
             <p id="confirmation-message" class="text-slate-600 mb-6">This action cannot be undone.</p>
             <div id="confirmation-buttons" class="flex justify-center gap-3">
-                <!-- Buttons are added dynamically -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- Detail Side Panel -->
     <div id="detail-panel-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out"></div>
     <div id="detail-panel" class="fixed top-0 right-0 h-full w-full max-w-lg bg-white shadow-xl z-40 transform translate-x-full transition-transform duration-300 ease-in-out">
         <div class="p-6 h-full flex flex-col">
@@ -101,12 +86,10 @@
                 </button>
             </div>
             <div id="detail-panel-content" class="overflow-y-auto flex-grow pr-3 space-y-6">
-                <!-- Detailed content will be injected here by JavaScript -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- Link to your JavaScript file -->
     <script type="module" src="script.js"></script>
 </body>
 </html>

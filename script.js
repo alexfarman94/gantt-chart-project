@@ -479,7 +479,7 @@ function setupEventListeners() {
     
     document.getElementById('add-milestone-btn').addEventListener('click', () => handleOpenMilestoneModal());
     document.getElementById('cancel-milestone-btn').addEventListener('click', handleCloseMilestoneModal);
-    document.getElementById('save-milestone-btn').addEventListener('click', handleSaveMilestone);
+    document.getElementById('save-milestone-btn').addEventListener('click', handleSaveMilstone);
     document.getElementById('delete-milestone-btn').addEventListener('click', handleDeleteMilestone);
     
     detailPanelClose.addEventListener('click', closeDetailPanel);
@@ -587,28 +587,42 @@ function handleUpdateTimeline() {
     saveState();
 }
 
+/**
+ * FIXED-BUG: Correctly adds modules by finding the full task object from templates.
+ */
 function handleAddModules() {
     const selected = moduleListEl.querySelectorAll('input:checked');
     if (selected.length === 0) return;
     
-    const allDefinedTasks = getInitialTasks();
+    const allDefinedTasks = getInitialTasks(); // Get all task templates
 
     selected.forEach(cb => {
         const name = cb.value;
-        if (!findTaskById(state.tasks || [], name)) {
-            // Find the full task definition from our initial tasks function
+        
+        // Check if a task with this name already exists in the current state
+        const taskExists = state.tasks.some(task => task.name === name);
+
+        if (!taskExists) {
+            // Find the full task definition from our templates
             const taskTemplate = allDefinedTasks.find(t => t.name === name);
             if (taskTemplate) {
-                 const newTask = JSON.parse(JSON.stringify(taskTemplate)); // Deep copy
-                 newTask.id = Date.now() + Math.random(); // Ensure unique ID
+                 // Deep copy the template to avoid reference issues when modifying
+                 const newTask = JSON.parse(JSON.stringify(taskTemplate)); 
+                 
+                 // Assign a new, unique ID for this instance
+                 newTask.id = Date.now() + Math.random(); 
+                 
                  if(!state.tasks) state.tasks = [];
                  state.tasks.push(newTask);
             }
         }
+        
+        // Reset the checkbox UI
         cb.checked = false;
         cb.parentElement.querySelector('span').classList.remove('bg-blue-100', 'text-blue-700');
     });
-    saveState();
+    
+    saveState(); // Save the updated state to Firestore
 }
 
 

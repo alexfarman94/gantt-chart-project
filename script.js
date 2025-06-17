@@ -114,24 +114,53 @@ function getInitialTasks() {
                 { id: now(), name: 'Custom Fields Configuration', start: 2, duration: 2, color: 'bg-sky-400' },
                 { id: now(), name: 'Employee Data Import', start: 3, duration: 2, color: 'bg-sky-400' },
             ],
+            // ++ UPDATED with full content from screenshots ++
             details: {
                 title: 'Core HR Project Workshops',
                 sections: [
+                    {
+                        heading: 'Project planning',
+                        content: 'HiBob will lead a series of project management focused meetings to ensure a smooth implementation and successful go-live.'
+                    },
+                    {
+                        heading: 'Business kickoff and/or implementation kickoff',
+                        content: 'Kickoff meeting(s) cover the overarching business objectives your team is looking to cover to best align value realization from Bob. Your implementation kickoff will align project objectives with your targeted go-live timeline to set you up for success.'
+                    },
+                    {
+                        heading: 'Launch & Adoption',
+                        content: 'To support the successful launch and adoption of Bob within the organization, your Implementation Manager will provide you guidance on how to best roll out and embed Bob to ensure business readiness and successful ongoing adoption. Prior to go-live, we lead a pre-launch review and provide a business readiness checklist to ensure optimal launch.'
+                    },
                     {
                         heading: 'Bob 101 (Required)',
                         content: 'Bob is pre-configured to meet the needs of businesses similar to your own. This includes standard data fields, common permission groups, time off templates, and more. Bob 101 covers the initial configuration that sets you up for long-term success.'
                     },
                     {
                         heading: 'Data structure and migration',
-                        content: 'We will work with you to define your data structure and seamlessly import your data into Bob. This includes planning your data structure to support key business needs with a strategic mindset into your growth plans and focus.'
+                        content: "We will work with you to define your data structure and seamlessly import your data into Bob. This includes planning your data structure to support key business needs with a strategic mindset into your growth plans and focus. Providing hands-on support on data migration, including people and payroll data, we will ensure you have a sound foundation to build on."
                     },
                     {
                         heading: 'Permissions and system settings',
                         content: 'Should you require customization of user roles and role permissions to support organizational needs, we will work with you to help you define and configure it. This may include site or department-specific settings.'
                     },
-                     {
+                    {
                         heading: 'Time off',
                         content: 'Country-specific templates are available in Bob. To meet unique time off needs, we will work through specific use cases to ensure policies are correctly built and assigned to the correct employees. This also includes hands-on support for time off data migration.'
+                    },
+                    {
+                        heading: 'Flows and task lists',
+                        content: "Flows and task lists are the backbone of manager and employee self-service. We will consult on and co-build organizational flows and task lists that support your operations needs. This may include employee onboarding, offboarding, self-service and data update processes. We will also work to provide guidance and co-build operational task lists to support employee lifecycle events including task list creation and task list management."
+                    },
+                    {
+                        heading: 'Analytics and dashboards',
+                        content: 'While Bob has many preconfigured dashboards and reports, we will consult on custom report configuration and report scheduling to meet the analytic needs of your business.'
+                    },
+                    {
+                        heading: 'Docs',
+                        content: "This workshop focuses on document management, including utilizing Bob's eSign functionality."
+                    },
+                    {
+                        heading: 'Job Catalog',
+                        content: "Job Catalog provides the architecture for standardization and is the foundation of many of our add-on modules (e.g. Workforce Planning, Compensation Bands). This workshop covers attribute settings, field review, values creation, and mass import of your current job catalog. Does NOT cover recommendation or creation of a job catalog for your company, but rather technical features of Bob's Job Catalog functionality. An example job catalog can be provided upon request."
                     }
                 ]
             }

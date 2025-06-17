@@ -69,17 +69,21 @@ async function setupAuthAndListeners() {
             dbRef = doc(db, 'artifacts', firebaseConfig.appId, 'public', 'data', 'gantt', 'state');
 
             onSnapshot(dbRef, (docSnap) => {
-                if (docSnap.exists() && docSnap.data().tasks && docSnap.data().tasks.length > 0) {
-                    state = docSnap.data();
-                    
-                    // Enrich loaded tasks with details if they are missing from the database
+                if (docSnap.exists() && docSnap.data().tasks) {
+                    const savedState = docSnap.data();
                     const defaultTasks = getInitialTasks();
-                    state.tasks.forEach(task => {
-                        const defaultTask = defaultTasks.find(dt => dt.name === task.name);
-                        if (defaultTask && defaultTask.details && !task.details) {
-                            task.details = defaultTask.details;
-                        }
+                
+                    // Merge saved tasks with templates to ensure details are always present
+                    state.tasks = savedState.tasks.map(savedTask => {
+                        const template = defaultTasks.find(t => t.name === savedTask.name);
+                        // Combine template with saved data, letting saved data override defaults
+                        return template ? { ...template,
+                            ...savedTask
+                        } : savedTask;
                     });
+                
+                    state.milestones = savedState.milestones || [];
+                    state.totalWeeks = savedState.totalWeeks || 12;
 
                 } else {
                     console.log("No document found or empty tasks. Creating with default detailed state.");
@@ -265,6 +269,7 @@ function saveState() {
 
 function render() {
     if (!ganttContainerEl) return;
+    renderModules(); // <-- ADD THIS LINE
     weeksInputEl.value = state.totalWeeks;
     renderGanttChart();
 }
@@ -479,7 +484,7 @@ function setupEventListeners() {
     
     document.getElementById('add-milestone-btn').addEventListener('click', () => handleOpenMilestoneModal());
     document.getElementById('cancel-milestone-btn').addEventListener('click', handleCloseMilestoneModal);
-    document.getElementById('save-milestone-btn').addEventListener('click', handleSaveMilstone);
+    document.getElementById('save-milestone-btn').addEventListener('click', handleSaveMilestone);
     document.getElementById('delete-milestone-btn').addEventListener('click', handleDeleteMilestone);
     
     detailPanelClose.addEventListener('click', closeDetailPanel);

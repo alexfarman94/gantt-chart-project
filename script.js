@@ -1,11 +1,9 @@
+// Correctly import from the Firebase CDN
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -50,7 +48,8 @@ const weeksInputEl = document.getElementById('total-weeks-input');
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-    document.getElementById('app-id-display').textContent = appId;
+    // FIX: Use firebaseConfig.appId instead of appId
+    document.getElementById('app-id-display').textContent = firebaseConfig.appId;
     setupEventListeners();
     renderModules();
     await setupAuthAndListeners();
@@ -61,7 +60,8 @@ async function setupAuthAndListeners() {
         if (user) {
             userId = user.uid;
             document.getElementById('user-id-display').textContent = userId;
-            dbRef = doc(db, 'artifacts', appId, 'public', 'data', 'gantt', 'state');
+            // FIX: Use firebaseConfig.appId to construct the database reference
+            dbRef = doc(db, 'artifacts', firebaseConfig.appId, 'public', 'data', 'gantt', 'state');
 
             onSnapshot(dbRef, (docSnap) => {
                 if (docSnap.exists() && docSnap.data().tasks && docSnap.data().tasks.length > 0) {
@@ -70,7 +70,7 @@ async function setupAuthAndListeners() {
                     console.log("No document found or empty tasks. Creating with default detailed state.");
                     state.tasks = getInitialTasks();
                     state.milestones = []; // Start with no milestones
-                    saveState(); 
+                    saveState();
                 }
                 render();
             }, (error) => {
@@ -94,7 +94,7 @@ function getInitialTasks() {
     const now = () => idCounter++;
     return [
         { id: now(), name: 'Project Kick-off', start: 0, duration: 1, color: 'bg-green-500', children: [], isExpanded: false },
-        { 
+        {
             id: now(), name: 'Core HR', start: 1, duration: 4, color: moduleColors['Core HR'], isExpanded: false,
             children: [
                 { id: now(), name: 'Onboarding Workflow Setup', start: 1, duration: 2, color: 'bg-sky-400' },
@@ -102,7 +102,7 @@ function getInitialTasks() {
                 { id: now(), name: 'Employee Data Import', start: 3, duration: 2, color: 'bg-sky-400' },
             ]
         },
-        { 
+        {
             id: now(), name: 'Compensation', start: 3, duration: 5, color: moduleColors['Compensation'], isExpanded: false,
             children: [
                 { id: now(), name: 'Compensation Benchmarking', start: 3, duration: 2, color: 'bg-amber-400' },
@@ -171,7 +171,7 @@ function renderModules() {
 }
 
 function renderGanttChart() {
-    ganttContainerEl.innerHTML = ''; 
+    ganttContainerEl.innerHTML = '';
 
     const table = document.createElement('table');
     table.className = 'w-full border-collapse';
@@ -191,9 +191,9 @@ function renderGanttChart() {
     });
     table.appendChild(tbody);
     ganttContainerEl.appendChild(table);
-    
+
     setupGanttEventListeners();
-    
+
     requestAnimationFrame(() => {
          ganttContainerEl.querySelectorAll('.gantt-bar').forEach(adjustBarText);
     });
@@ -202,7 +202,7 @@ function renderGanttChart() {
 function renderTaskRowRecursive(task, level, tbody, index) {
     const tr = document.createElement('tr');
     tr.dataset.taskId = task.id;
-    
+
     const isParent = task.children && task.children.length > 0;
 
     if (level === 0) {
@@ -213,13 +213,13 @@ function renderTaskRowRecursive(task, level, tbody, index) {
     const nameCell = document.createElement('td');
     nameCell.className = 'sticky left-0 bg-white p-3 border-b border-r';
     nameCell.style.paddingLeft = `${0.75 + level * 1.5}rem`;
-    
+
     const nameContainer = document.createElement('div');
     nameContainer.className = 'task-name-container';
-    
+
     if (level === 0) nameContainer.innerHTML += `<span class="reorder-handle">⠿</span>`;
     else nameContainer.innerHTML += `<span class="w-4 inline-block"></span>`;
-    
+
     if (isParent) {
         const iconClass = task.isExpanded ? 'toggle-expand is-expanded' : 'toggle-expand';
         const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${iconClass}"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
@@ -276,7 +276,7 @@ function createGanttBar(task) {
     bar.style.left = `calc(${task.start / state.totalWeeks} * 100%)`;
     bar.style.width = `calc(${task.duration / state.totalWeeks} * 100%)`;
     bar.dataset.taskId = task.id;
-    
+
     const barLabel = document.createElement('span');
     barLabel.className = 'gantt-bar-label';
     barLabel.textContent = task.name;
@@ -291,7 +291,7 @@ function createGanttBar(task) {
     const leftHandle = document.createElement('div');
     leftHandle.className = 'resize-handle resize-handle-left';
     bar.appendChild(leftHandle);
-    
+
     const rightHandle = document.createElement('div');
     rightHandle.className = 'resize-handle resize-handle-right';
     bar.appendChild(rightHandle);
@@ -310,7 +310,7 @@ function adjustBarText(bar) {
     barLabel.style.transform = 'scale(1)';
     const textWidth = barLabel.scrollWidth;
     const availableWidth = bar.clientWidth - PADDING;
-    
+
     if (textWidth <= availableWidth) {
         barLabel.style.visibility = 'visible';
         barLabel.style.transform = 'scale(1)';
@@ -343,12 +343,12 @@ function findTaskById(tasks, taskId) {
 function setupEventListeners() {
     document.getElementById('update-timeline-btn').addEventListener('click', handleUpdateTimeline);
     document.getElementById('add-btn').addEventListener('click', handleAddModules);
-    
+
     document.getElementById('add-milestone-btn').addEventListener('click', () => handleOpenMilestoneModal());
     document.getElementById('cancel-milestone-btn').addEventListener('click', handleCloseMilestoneModal);
     document.getElementById('save-milestone-btn').addEventListener('click', handleSaveMilestone);
     document.getElementById('delete-milestone-btn').addEventListener('click', handleDeleteMilestone);
-    
+
     ganttContainerEl.addEventListener('click', (e) => {
         const milestoneSymbol = e.target.closest('.milestone-symbol');
         if (milestoneSymbol) {
@@ -520,7 +520,7 @@ function handleSaveMilestone() {
     }
 
     if (!state.milestones) state.milestones = [];
-    
+
     if (id) {
         const index = state.milestones.findIndex(m => m.id == id);
         if(index > -1) state.milestones[index] = { ...state.milestones[index], label, week, taskId };
@@ -544,7 +544,7 @@ function handleDeleteMilestone() {
 function handleDeleteTask(e) {
     e.stopPropagation();
     const taskId = e.currentTarget.dataset.taskId;
-    
+
     const deleteTaskRecursive = (tasks, id) => {
         for (let i = 0; i < tasks.length; i++) {
             if (tasks[i].id == id) {
@@ -584,7 +584,7 @@ function handleDragStart(e) {
     bar.classList.add('is-dragging');
     const ganttAreaWidth = ganttContainerEl.querySelector('td[colspan]').offsetWidth;
     const weekWidth = ganttAreaWidth / state.totalWeeks;
-    
+
     dragInfo = { task, bar, weekWidth, startX: e.clientX, initialStart: task.start };
     document.addEventListener('mousemove', handleDragMove);
     document.addEventListener('mouseup', handleDragEnd, { once: true });
@@ -617,10 +617,10 @@ function handleResizeStart(e) {
     const taskId = bar.dataset.taskId;
     const task = findTaskById(state.tasks, taskId);
     if (!task) return;
-    
+
     const ganttAreaWidth = ganttContainerEl.querySelector('td[colspan]').offsetWidth;
     const weekWidth = ganttAreaWidth / state.totalWeeks;
-    
+
     resizeInfo = { task, bar, weekWidth, isLeft: handle.classList.contains('resize-handle-left'), startX: e.clientX, initialStart: task.start, initialDuration: task.duration };
     document.addEventListener('mousemove', handleResizeMove);
     document.addEventListener('mouseup', handleResizeEnd, { once: true });
@@ -683,13 +683,13 @@ function handleReorderDrop(e) {
     e.preventDefault();
     const dropTarget = e.target.closest('tr[draggable="true"]');
     if (!dropTarget || !draggedItem) return;
-    
+
     dropTarget.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
     draggedItem.classList.remove('is-reordering');
-    
+
     const fromIndex = parseInt(draggedItem.dataset.index);
     let toIndex = parseInt(dropTarget.dataset.index);
-    
+
     const targetRect = dropTarget.getBoundingClientRect();
     if (e.clientY > targetRect.top + targetRect.height / 2) toIndex++;
     if (fromIndex < toIndex) toIndex--;

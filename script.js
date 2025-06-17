@@ -2,17 +2,19 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// --- GLOBAL STATE & CONFIG ---
-// TODO: Replace these placeholders with your own configuration.
-const appId = 'my-local-gantt-chart'; // Or any other unique name for your project
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  // Paste your firebaseConfig object here from your Firebase project settings
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBb6OANTAhNAGk9e039n-7jiBtN8MgZ4uM",
+  authDomain: "gantt-chart-project-fb.firebaseapp.com",
+  projectId: "gantt-chart-project-fb",
+  storageBucket: "gantt-chart-project-fb.firebasestorage.app",
+  messagingSenderId: "1059828755338",
+  appId: "1:1059828755338:web:11c0f418b9e7e3ee3ab673"
 };
 
 const app = initializeApp(firebaseConfig);

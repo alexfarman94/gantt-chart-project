@@ -130,3 +130,13 @@ tr:hover .reorder-handle {
     visibility: visible;
     opacity: 1;
 }
+
+/* Detail Panel Styles */
+#detail-panel.is-open {
+    transform: translateX(0);
+}
+
+#detail-panel-overlay.is-open {
+    display: block;
+    opacity: 1;
+}

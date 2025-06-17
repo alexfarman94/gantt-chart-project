@@ -1,9 +1,7 @@
 // Correctly import from the Firebase CDN
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -43,12 +41,18 @@ let userId;
 const moduleListEl = document.getElementById('module-list');
 const ganttContainerEl = document.getElementById('gantt-chart-container');
 const weeksInputEl = document.getElementById('total-weeks-input');
+// ++ NEW DOM ELEMENTS FOR DETAIL PANEL ++
+const detailPanel = document.getElementById('detail-panel');
+const detailPanelOverlay = document.getElementById('detail-panel-overlay');
+const detailPanelTitle = document.getElementById('detail-panel-title');
+const detailPanelContent = document.getElementById('detail-panel-content');
+const detailPanelClose = document.getElementById('detail-panel-close');
+
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-    // FIX: Use firebaseConfig.appId instead of appId
     document.getElementById('app-id-display').textContent = firebaseConfig.appId;
     setupEventListeners();
     renderModules();
@@ -60,7 +64,6 @@ async function setupAuthAndListeners() {
         if (user) {
             userId = user.uid;
             document.getElementById('user-id-display').textContent = userId;
-            // FIX: Use firebaseConfig.appId to construct the database reference
             dbRef = doc(db, 'artifacts', firebaseConfig.appId, 'public', 'data', 'gantt', 'state');
 
             onSnapshot(dbRef, (docSnap) => {
@@ -69,8 +72,8 @@ async function setupAuthAndListeners() {
                 } else {
                     console.log("No document found or empty tasks. Creating with default detailed state.");
                     state.tasks = getInitialTasks();
-                    state.milestones = []; // Start with no milestones
-                    saveState();
+                    state.milestones = [];
+                    saveState(); 
                 }
                 render();
             }, (error) => {
@@ -94,49 +97,42 @@ function getInitialTasks() {
     const now = () => idCounter++;
     return [
         { id: now(), name: 'Project Kick-off', start: 0, duration: 1, color: 'bg-green-500', children: [], isExpanded: false },
-        {
+        { 
             id: now(), name: 'Core HR', start: 1, duration: 4, color: moduleColors['Core HR'], isExpanded: false,
             children: [
                 { id: now(), name: 'Onboarding Workflow Setup', start: 1, duration: 2, color: 'bg-sky-400' },
                 { id: now(), name: 'Custom Fields Configuration', start: 2, duration: 2, color: 'bg-sky-400' },
                 { id: now(), name: 'Employee Data Import', start: 3, duration: 2, color: 'bg-sky-400' },
-            ]
+            ],
+            // ++ ADDED DETAIL CONTENT FOR THIS TASK ++
+            details: {
+                title: 'Core HR Project Workshops',
+                sections: [
+                    {
+                        heading: 'Bob 101 (Required)',
+                        content: 'Bob is pre-configured to meet the needs of businesses similar to your own. This includes standard data fields, common permission groups, time off templates, and more. Bob 101 covers the initial configuration that sets you up for long-term success.'
+                    },
+                    {
+                        heading: 'Data structure and migration',
+                        content: 'We will work with you to define your data structure and seamlessly import your data into Bob. This includes planning your data structure to support key business needs with a strategic mindset into your growth plans and focus.'
+                    },
+                    {
+                        heading: 'Permissions and system settings',
+                        content: 'Should you require customization of user roles and role permissions to support organizational needs, we will work with you to help you define and configure it. This may include site or department-specific settings.'
+                    },
+                     {
+                        heading: 'Time off',
+                        content: 'Country-specific templates are available in Bob. To meet unique time off needs, we will work through specific use cases to ensure policies are correctly built and assigned to the correct employees. This also includes hands-on support for time off data migration.'
+                    }
+                ]
+            }
         },
-        {
+        { 
             id: now(), name: 'Compensation', start: 3, duration: 5, color: moduleColors['Compensation'], isExpanded: false,
             children: [
                 { id: now(), name: 'Compensation Benchmarking', start: 3, duration: 2, color: 'bg-amber-400' },
                 { id: now(), name: 'Salary Structure Setup', start: 5, duration: 2, color: 'bg-amber-400' },
                 { id: now(), name: 'Bonus Plan Configuration', start: 6, duration: 2, color: 'bg-amber-400' },
-            ]
-        },
-        {
-            id: now(), name: 'Time & Attendance', start: 4, duration: 4, color: moduleColors['Time & Attendance'], isExpanded: false,
-            children: [
-                { id: now(), name: 'Policy Configuration', start: 4, duration: 2, color: 'bg-emerald-400' },
-                { id: now(), name: 'Timesheet & Approval Setup', start: 5, duration: 2, color: 'bg-emerald-400' },
-                { id: now(), name: 'Attendance Tracking Rules', start: 6, duration: 2, color: 'bg-emerald-400' },
-            ]
-        },
-        {
-            id: now(), name: 'Performance', start: 5, duration: 4, color: moduleColors['Performance'], isExpanded: false,
-            children: [
-                { id: now(), name: 'Review Templates & Cycles', start: 5, duration: 2, color: 'bg-pink-400' },
-                { id: now(), name: 'Calibration Setup', start: 7, duration: 2, color: 'bg-pink-400' },
-            ]
-        },
-        {
-            id: now(), name: 'Talent', start: 6, duration: 4, color: moduleColors['Talent'], isExpanded: false,
-            children: [
-                { id: now(), name: 'Goal Setting Configuration', start: 6, duration: 2, color: 'bg-rose-400' },
-                { id: now(), name: 'Feedback Cycle Setup', start: 8, duration: 2, color: 'bg-rose-400' },
-            ]
-        },
-        {
-            id: now(), name: 'Sandbox', start: 8, duration: 3, color: moduleColors['Sandbox'], isExpanded: false,
-            children: [
-                { id: now(), name: 'Configuration Testing', start: 8, duration: 2, color: 'bg-slate-400' },
-                { id: now(), name: 'User Acceptance Testing (UAT)', start: 9, duration: 2, color: 'bg-slate-400' },
             ]
         },
     ];
@@ -171,7 +167,7 @@ function renderModules() {
 }
 
 function renderGanttChart() {
-    ganttContainerEl.innerHTML = '';
+    ganttContainerEl.innerHTML = ''; 
 
     const table = document.createElement('table');
     table.className = 'w-full border-collapse';
@@ -191,9 +187,9 @@ function renderGanttChart() {
     });
     table.appendChild(tbody);
     ganttContainerEl.appendChild(table);
-
+    
     setupGanttEventListeners();
-
+    
     requestAnimationFrame(() => {
          ganttContainerEl.querySelectorAll('.gantt-bar').forEach(adjustBarText);
     });
@@ -202,7 +198,11 @@ function renderGanttChart() {
 function renderTaskRowRecursive(task, level, tbody, index) {
     const tr = document.createElement('tr');
     tr.dataset.taskId = task.id;
-
+    // ++ Make row clickable if it has details ++
+    if (task.details) {
+        tr.classList.add('cursor-pointer');
+    }
+    
     const isParent = task.children && task.children.length > 0;
 
     if (level === 0) {
@@ -213,13 +213,13 @@ function renderTaskRowRecursive(task, level, tbody, index) {
     const nameCell = document.createElement('td');
     nameCell.className = 'sticky left-0 bg-white p-3 border-b border-r';
     nameCell.style.paddingLeft = `${0.75 + level * 1.5}rem`;
-
+    
     const nameContainer = document.createElement('div');
     nameContainer.className = 'task-name-container';
-
+    
     if (level === 0) nameContainer.innerHTML += `<span class="reorder-handle">⠿</span>`;
     else nameContainer.innerHTML += `<span class="w-4 inline-block"></span>`;
-
+    
     if (isParent) {
         const iconClass = task.isExpanded ? 'toggle-expand is-expanded' : 'toggle-expand';
         const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${iconClass}"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
@@ -276,7 +276,7 @@ function createGanttBar(task) {
     bar.style.left = `calc(${task.start / state.totalWeeks} * 100%)`;
     bar.style.width = `calc(${task.duration / state.totalWeeks} * 100%)`;
     bar.dataset.taskId = task.id;
-
+    
     const barLabel = document.createElement('span');
     barLabel.className = 'gantt-bar-label';
     barLabel.textContent = task.name;
@@ -291,7 +291,7 @@ function createGanttBar(task) {
     const leftHandle = document.createElement('div');
     leftHandle.className = 'resize-handle resize-handle-left';
     bar.appendChild(leftHandle);
-
+    
     const rightHandle = document.createElement('div');
     rightHandle.className = 'resize-handle resize-handle-right';
     bar.appendChild(rightHandle);
@@ -302,23 +302,17 @@ function createGanttBar(task) {
 function adjustBarText(bar) {
     const barLabel = bar.querySelector('.gantt-bar-label');
     if (!barLabel) return;
-
     const MIN_SCALE = 0.5;
-    const PADDING = 45; // Approx width for padding and delete button
-
-    // Reset scale to get accurate scrollWidth
+    const PADDING = 45;
     barLabel.style.transform = 'scale(1)';
     const textWidth = barLabel.scrollWidth;
     const availableWidth = bar.clientWidth - PADDING;
-
     if (textWidth <= availableWidth) {
         barLabel.style.visibility = 'visible';
         barLabel.style.transform = 'scale(1)';
         return;
     }
-
     const scale = availableWidth / textWidth;
-
     if (scale < MIN_SCALE) {
         barLabel.style.visibility = 'hidden';
     } else {
@@ -340,15 +334,47 @@ function findTaskById(tasks, taskId) {
     return null;
 }
 
+// ++ NEW FUNCTION TO OPEN THE DETAIL PANEL ++
+function openDetailPanel(task) {
+    if (!task.details) return; 
+
+    detailPanelTitle.textContent = task.details.title;
+    detailPanelContent.innerHTML = ''; 
+
+    task.details.sections.forEach(section => {
+        const sectionEl = document.createElement('div');
+        sectionEl.innerHTML = `
+            <h3 class="text-lg font-semibold mb-2">${section.heading}</h3>
+            <p class="text-slate-600">${section.content}</p>
+        `;
+        detailPanelContent.appendChild(sectionEl);
+    });
+
+    detailPanel.classList.add('is-open');
+    detailPanelOverlay.classList.add('is-open');
+}
+
+// ++ NEW FUNCTION TO CLOSE THE DETAIL PANEL ++
+function closeDetailPanel() {
+    detailPanel.classList.remove('is-open');
+    detailPanelOverlay.classList.remove('is-open');
+}
+
+
 function setupEventListeners() {
     document.getElementById('update-timeline-btn').addEventListener('click', handleUpdateTimeline);
     document.getElementById('add-btn').addEventListener('click', handleAddModules);
-
+    
     document.getElementById('add-milestone-btn').addEventListener('click', () => handleOpenMilestoneModal());
     document.getElementById('cancel-milestone-btn').addEventListener('click', handleCloseMilestoneModal);
     document.getElementById('save-milestone-btn').addEventListener('click', handleSaveMilestone);
     document.getElementById('delete-milestone-btn').addEventListener('click', handleDeleteMilestone);
-
+    
+    // ++ ADDED LISTENERS FOR DETAIL PANEL ++
+    detailPanelClose.addEventListener('click', closeDetailPanel);
+    detailPanelOverlay.addEventListener('click', closeDetailPanel);
+    
+    // ++ UPDATED GANTT CLICK LISTENER ++
     ganttContainerEl.addEventListener('click', (e) => {
         const milestoneSymbol = e.target.closest('.milestone-symbol');
         if (milestoneSymbol) {
@@ -360,6 +386,17 @@ function setupEventListeners() {
         if (toggleBtn) {
             const taskId = toggleBtn.closest('tr').dataset.taskId;
             handleToggleExpand(taskId);
+            return; // Don't open the panel if we're just expanding/collapsing
+        }
+
+        const taskRow = e.target.closest('tr[data-task-id]');
+        if(taskRow){
+            const taskId = taskRow.dataset.taskId;
+            const task = findTaskById(state.tasks, taskId);
+            // Open panel only for top-level tasks with details for this example
+            if (task && task.details) {
+                openDetailPanel(task);
+            }
         }
     });
 }
@@ -520,7 +557,7 @@ function handleSaveMilestone() {
     }
 
     if (!state.milestones) state.milestones = [];
-
+    
     if (id) {
         const index = state.milestones.findIndex(m => m.id == id);
         if(index > -1) state.milestones[index] = { ...state.milestones[index], label, week, taskId };
@@ -544,7 +581,7 @@ function handleDeleteMilestone() {
 function handleDeleteTask(e) {
     e.stopPropagation();
     const taskId = e.currentTarget.dataset.taskId;
-
+    
     const deleteTaskRecursive = (tasks, id) => {
         for (let i = 0; i < tasks.length; i++) {
             if (tasks[i].id == id) {
@@ -584,7 +621,7 @@ function handleDragStart(e) {
     bar.classList.add('is-dragging');
     const ganttAreaWidth = ganttContainerEl.querySelector('td[colspan]').offsetWidth;
     const weekWidth = ganttAreaWidth / state.totalWeeks;
-
+    
     dragInfo = { task, bar, weekWidth, startX: e.clientX, initialStart: task.start };
     document.addEventListener('mousemove', handleDragMove);
     document.addEventListener('mouseup', handleDragEnd, { once: true });
@@ -617,10 +654,10 @@ function handleResizeStart(e) {
     const taskId = bar.dataset.taskId;
     const task = findTaskById(state.tasks, taskId);
     if (!task) return;
-
+    
     const ganttAreaWidth = ganttContainerEl.querySelector('td[colspan]').offsetWidth;
     const weekWidth = ganttAreaWidth / state.totalWeeks;
-
+    
     resizeInfo = { task, bar, weekWidth, isLeft: handle.classList.contains('resize-handle-left'), startX: e.clientX, initialStart: task.start, initialDuration: task.duration };
     document.addEventListener('mousemove', handleResizeMove);
     document.addEventListener('mouseup', handleResizeEnd, { once: true });
@@ -683,13 +720,13 @@ function handleReorderDrop(e) {
     e.preventDefault();
     const dropTarget = e.target.closest('tr[draggable="true"]');
     if (!dropTarget || !draggedItem) return;
-
+    
     dropTarget.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
     draggedItem.classList.remove('is-reordering');
-
+    
     const fromIndex = parseInt(draggedItem.dataset.index);
     let toIndex = parseInt(dropTarget.dataset.index);
-
+    
     const targetRect = dropTarget.getBoundingClientRect();
     if (e.clientY > targetRect.top + targetRect.height / 2) toIndex++;
     if (fromIndex < toIndex) toIndex--;

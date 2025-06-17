@@ -17,17 +17,20 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const allModules = ['Core HR', 'Workforce Planning', 'Compensation', 'Time & Attendance', 'Talent', 'Performance', 'UK Payroll', 'Sandbox'];
+const allModules = ['Core HR', 'Workforce Planning', 'Compensation', 'Time & Attendance', 'Talent', 'Hiring', 'Learning', 'UK Payroll', 'Sandbox'];
 const moduleColors = {
     'Core HR': 'bg-sky-500',
     'Workforce Planning': 'bg-violet-500',
     'Compensation': 'bg-amber-500',
     'Time & Attendance': 'bg-emerald-500',
     'Talent': 'bg-rose-500',
-    'Performance': 'bg-pink-500',
+    'Hiring': 'bg-blue-500',
+    'Learning': 'bg-indigo-500',
     'UK Payroll': 'bg-fuchsia-500',
-    'Sandbox': 'bg-slate-500'
+    'Sandbox': 'bg-slate-500',
+    'Performance': 'bg-pink-500' // Kept for legacy if needed
 };
+
 
 let state = {
     tasks: [],
@@ -41,7 +44,6 @@ let userId;
 const moduleListEl = document.getElementById('module-list');
 const ganttContainerEl = document.getElementById('gantt-chart-container');
 const weeksInputEl = document.getElementById('total-weeks-input');
-// ++ NEW DOM ELEMENTS FOR DETAIL PANEL ++
 const detailPanel = document.getElementById('detail-panel');
 const detailPanelOverlay = document.getElementById('detail-panel-overlay');
 const detailPanelTitle = document.getElementById('detail-panel-title');
@@ -70,7 +72,7 @@ async function setupAuthAndListeners() {
                 if (docSnap.exists() && docSnap.data().tasks && docSnap.data().tasks.length > 0) {
                     state = docSnap.data();
                     
-                    // ++ FIX: Enrich loaded tasks with details if they are missing from the database ++
+                    // Enrich loaded tasks with details if they are missing from the database
                     const defaultTasks = getInitialTasks();
                     state.tasks.forEach(task => {
                         const defaultTask = defaultTasks.find(dt => dt.name === task.name);
@@ -114,25 +116,12 @@ function getInitialTasks() {
                 { id: now(), name: 'Custom Fields Configuration', start: 2, duration: 2, color: 'bg-sky-400' },
                 { id: now(), name: 'Employee Data Import', start: 3, duration: 2, color: 'bg-sky-400' },
             ],
-            // ++ UPDATED with full content from screenshots ++
             details: {
-                title: 'Core HR Project Workshops',
+                title: 'Core HR Implementation',
                 sections: [
                     {
-                        heading: 'Project planning',
-                        content: 'HiBob will lead a series of project management focused meetings to ensure a smooth implementation and successful go-live.'
-                    },
-                    {
-                        heading: 'Business kickoff and/or implementation kickoff',
-                        content: 'Kickoff meeting(s) cover the overarching business objectives your team is looking to cover to best align value realization from Bob. Your implementation kickoff will align project objectives with your targeted go-live timeline to set you up for success.'
-                    },
-                    {
-                        heading: 'Launch & Adoption',
-                        content: 'To support the successful launch and adoption of Bob within the organization, your Implementation Manager will provide you guidance on how to best roll out and embed Bob to ensure business readiness and successful ongoing adoption. Prior to go-live, we lead a pre-launch review and provide a business readiness checklist to ensure optimal launch.'
-                    },
-                    {
                         heading: 'Bob 101 (Required)',
-                        content: 'Bob is pre-configured to meet the needs of businesses similar to your own. This includes standard data fields, common permission groups, time off templates, and more. Bob 101 covers the initial configuration that sets you up for long-term success.'
+                        content: "This stage covers the initial configuration that sets you up for long-term success. It includes standard data fields, common permission groups, time off templates, and more."
                     },
                     {
                         heading: 'Data structure and migration',
@@ -143,12 +132,16 @@ function getInitialTasks() {
                         content: 'Should you require customization of user roles and role permissions to support organizational needs, we will work with you to help you define and configure it. This may include site or department-specific settings.'
                     },
                     {
+                        heading: 'Bob 102 (Based on project goals)',
+                        content: 'This second stage covers customized configuration workshops to meet your specific organizational needs and get maximum value from Bob.'
+                    },
+                    {
                         heading: 'Time off',
                         content: 'Country-specific templates are available in Bob. To meet unique time off needs, we will work through specific use cases to ensure policies are correctly built and assigned to the correct employees. This also includes hands-on support for time off data migration.'
                     },
                     {
                         heading: 'Flows and task lists',
-                        content: "Flows and task lists are the backbone of manager and employee self-service. We will consult on and co-build organizational flows and task lists that support your operations needs. This may include employee onboarding, offboarding, self-service and data update processes. We will also work to provide guidance and co-build operational task lists to support employee lifecycle events including task list creation and task list management."
+                        content: "Flows and task lists are the backbone of manager and employee self-service. We will consult on and co-build organizational flows and task lists that support your operations needs. This may include employee onboarding, offboarding, self-service and data update processes."
                     },
                     {
                         heading: 'Analytics and dashboards',
@@ -160,8 +153,22 @@ function getInitialTasks() {
                     },
                     {
                         heading: 'Job Catalog',
-                        content: "Job Catalog provides the architecture for standardization and is the foundation of many of our add-on modules (e.g. Workforce Planning, Compensation Bands). This workshop covers attribute settings, field review, values creation, and mass import of your current job catalog. Does NOT cover recommendation or creation of a job catalog for your company, but rather technical features of Bob's Job Catalog functionality. An example job catalog can be provided upon request."
+                        content: "This workshop covers attribute settings, field review, values creation, and mass import of your current job catalog. It does NOT cover recommendation or creation of a job catalog for your company."
                     }
+                ]
+            }
+        },
+        {
+            id: now(), name: 'Workforce Planning', start: 2, duration: 7, color: moduleColors['Workforce Planning'], children: [], isExpanded: false,
+            details: {
+                title: 'Workforce Planning Workshops',
+                sections: [
+                    { heading: 'People Data', content: "Review of your current People data to support optimization for HiBob’s Workforce Planning Modules." },
+                    { heading: 'Job Catalog', content: "Support in the creation of Bob’s job catalog, assigning attributes to each job, and importing your job catalog." },
+                    { heading: 'Positions', content: "Manage positions in Bob, aligning them to the job catalog and linking them to your current employee structure, including To Be Hired (TBH) positions." },
+                    { heading: 'Automation', content: "Integrate Bob’s WFP elements with Core HR processes like new hire flows, and support setup of Greenhouse ATS integration." },
+                    { heading: 'Planning Events', content: "Workshop for setting up your first workforce planning event in Bob, including scope, planners, and permissions." },
+                    { heading: 'Analytics', content: "Track & measure your KPIs, review planned positions, and compare them with your recruitment pipeline." }
                 ]
             }
         },
@@ -171,10 +178,80 @@ function getInitialTasks() {
                 { id: now(), name: 'Compensation Benchmarking', start: 3, duration: 2, color: 'bg-amber-400' },
                 { id: now(), name: 'Salary Structure Setup', start: 5, duration: 2, color: 'bg-amber-400' },
                 { id: now(), name: 'Bonus Plan Configuration', start: 6, duration: 2, color: 'bg-amber-400' },
-            ]
+            ],
+            details: {
+                title: 'Compensation Workshops',
+                sections: [
+                    { heading: 'Data Import', content: 'Ensuring that your people and payroll data supports your strategy within compensation and the relevant metrics are available to make data based decisions.' },
+                    { heading: 'Event Enablement', content: 'Workshops focused on setting up your compensation event, including components, participants vs eligibility, budgets, and benchmarking.' },
+                    { heading: 'Compensation Bands', content: 'Also known as salary bands, this allows you to set the minimum, mid, and maximum amount a company will pay someone.' },
+                    { heading: 'Worksheet Management', content: 'Utilizing Hibob’s compensation management for both admin and manager views to support end-user enablement and usability, including running and closing an event.' }
+                ]
+            }
         },
+        {
+            id: now(), name: 'Time & Attendance', start: 4, duration: 4, color: moduleColors['Time & Attendance'], children: [], isExpanded: false,
+            details: {
+                title: 'Time & Attendance Workshops',
+                sections: [
+                    { heading: 'People Data & Discovery', content: "Review of your current People data and setup of Time & Attendance reporting requirements." },
+                    { heading: 'Time & Attendance Cycles', content: "Enablement and solutionizing on set up of T&A cycles, including required approval flow processes." },
+                    { heading: 'Project Tracking', content: "Use Project tracking to create projects and tasks and assign employees to gain insights into where resource time is being used." },
+                    { heading: 'Clock Integration (Optional)', content: "Set up and open a Clock Integration within HiBob." }
+                ]
+            }
+        },
+        {
+            id: now(), name: 'Talent', start: 5, duration: 3, color: moduleColors['Talent'], children: [], isExpanded: false,
+            details: {
+                title: 'Talent Workshops',
+                sections: [
+                    { heading: 'Performance Reviews', content: 'Create & develop a seamless way to deliver qualitative performance reviews, including self, manager, peer, and upward feedback.' },
+                    { heading: 'Goals', content: 'Inspire productivity by setting goals to keep everyone on track and aligned, empowering managers to motivate and drive outcomes.' },
+                    { heading: '1on1s', content: 'Support a dialogue between employees and managers with regular 1-on-1 check-ins to create a culture of ongoing feedback.' },
+                    { heading: 'Surveys', content: 'Empower leaders to make informed decisions by using company surveys to understand sentiment and guide action plans.' },
+                    { heading: 'Talent Groups', content: 'Helps admins and managers support culture initiatives by nominating and identifying employees based on their interactions.' }
+                ]
+            }
+        },
+        {
+            id: now(), name: 'Hiring', start: 6, duration: 6, color: moduleColors['Hiring'], children: [], isExpanded: false,
+            details: {
+                title: 'Hiring Workshops',
+                sections: [
+                    { heading: 'Data Import', content: "Hands-on support with data import process for job openings and candidate details." },
+                    { heading: 'Hiring Settings', content: "Overview and configuration of settings, permissions, hiring roles, fields (offer, candidate, job), approval flows, and templates." },
+                    { heading: 'Job Openings & Candidate Management', content: "Enablement on Job opening structure, process, and candidate flow in the hiring pipeline." },
+                    { heading: 'Integrations & Job Marketing', content: "Guidance and support on Job Marketing and Integrations, with step-by-step setup guides for career pages, calendars, job boards, and emails." },
+                    { heading: 'Hiring Analytics', content: "Uncover key analysis of your hiring process to support visibility of your Hiring KPIs with tailored reports." }
+                ]
+            }
+        },
+        {
+            id: now(), name: 'Learning', start: 7, duration: 5, color: moduleColors['Learning'], children: [], isExpanded: false,
+            details: {
+                title: 'Learning Workshops',
+                sections: [
+                    { heading: 'Learning Fundamentals', content: "Set up permissions across your organization, allowing key stakeholders visibility to HiBob learning and outcomes." },
+                    { heading: 'Training Catalog', content: "Set up learning courses (via integration partners or manually) to align with your business options. Grant provider access and set up categories, tags, and filters." },
+                    { heading: 'Course Assignment & Progression', content: "Assign courses from your training catalog to your employees and empower your managers to monitor their learning journey." }
+                ]
+            }
+        },
+        {
+            id: now(), name: 'UK Payroll', start: 8, duration: 4, color: moduleColors['UK Payroll'], children: [], isExpanded: false,
+            details: {
+                title: 'Payroll Hub Workshops',
+                sections: [
+                    { heading: 'Discovery', content: "Review and understand your payroll cycles, reporting requirements and current employee data to support Payroll Hub Implementation." },
+                    { heading: 'Payroll Hub Integration', content: "Workshop and build your first Hibob payroll hub report configuration, including field mapping, data upload, and cycle setup." },
+                    { heading: 'Validation', content: "Review and run payroll in parallel with Bob to validate data flows between Bob and your payroll solution." }
+                ]
+            }
+        }
     ];
 }
+
 
 function saveState() {
     if (!dbRef) return;
@@ -513,27 +590,27 @@ function handleUpdateTimeline() {
 function handleAddModules() {
     const selected = moduleListEl.querySelectorAll('input:checked');
     if (selected.length === 0) return;
+    
+    const allDefinedTasks = getInitialTasks();
 
     selected.forEach(cb => {
         const name = cb.value;
         if (!findTaskById(state.tasks || [], name)) {
-            const newTask = {
-                id: Date.now() + Math.random(),
-                name: name,
-                start: 0,
-                duration: 2,
-                color: moduleColors[name] || 'bg-gray-500',
-                children: [],
-                isExpanded: false
-            };
-            if(!state.tasks) state.tasks = [];
-            state.tasks.push(newTask);
+            // Find the full task definition from our initial tasks function
+            const taskTemplate = allDefinedTasks.find(t => t.name === name);
+            if (taskTemplate) {
+                 const newTask = JSON.parse(JSON.stringify(taskTemplate)); // Deep copy
+                 newTask.id = Date.now() + Math.random(); // Ensure unique ID
+                 if(!state.tasks) state.tasks = [];
+                 state.tasks.push(newTask);
+            }
         }
         cb.checked = false;
         cb.parentElement.querySelector('span').classList.remove('bg-blue-100', 'text-blue-700');
     });
     saveState();
 }
+
 
 function handleOpenMilestoneModal(milestoneId = null) {
     const modal = document.getElementById('milestone-modal');

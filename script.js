@@ -57,8 +57,8 @@ document.addEventListener('DOMContentLoaded', init);
 async function init() {
     document.getElementById('app-id-display').textContent = firebaseConfig.appId;
     setupEventListeners();
-    renderModules();
-    await setupAuthAndListeners();
+    render(); // Render the initial empty state immediately
+    await setupAuthAndListeners(); // Then, attempt to connect to Firebase
 }
 
 async function setupAuthAndListeners() {
@@ -72,16 +72,14 @@ async function setupAuthAndListeners() {
                 if (docSnap.exists() && docSnap.data().tasks) {
                     const savedState = docSnap.data();
                     const defaultTasks = getInitialTasks();
-                
+
                     // Merge saved tasks with templates to ensure details are always present
-                    state.tasks = savedState.tasks.map(savedTask => {
+                    state.tasks = (savedState.tasks || []).map(savedTask => {
                         const template = defaultTasks.find(t => t.name === savedTask.name);
                         // Combine template with saved data, letting saved data override defaults
-                        return template ? { ...template,
-                            ...savedTask
-                        } : savedTask;
+                        return template ? { ...template, ...savedTask } : savedTask;
                     });
-                
+
                     state.milestones = savedState.milestones || [];
                     state.totalWeeks = savedState.totalWeeks || 12;
 
@@ -91,7 +89,7 @@ async function setupAuthAndListeners() {
                     state.milestones = [];
                     saveState(); 
                 }
-                render();
+                render(); // Re-render with the data from Firebase
             }, (error) => {
                 console.error("Firestore snapshot error:", error);
                 showInfoModal('Connection Error', 'Could not load project data.');
@@ -269,7 +267,7 @@ function saveState() {
 
 function render() {
     if (!ganttContainerEl) return;
-    renderModules(); // <-- ADD THIS LINE
+    renderModules();
     weeksInputEl.value = state.totalWeeks;
     renderGanttChart();
 }

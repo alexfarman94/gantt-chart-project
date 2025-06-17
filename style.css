@@ -137,6 +137,6 @@ tr:hover .reorder-handle {
 }
 
 #detail-panel-overlay.is-open {
-    display: block;
     opacity: 1;
+    pointer-events: auto;
 }

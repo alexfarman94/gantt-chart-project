@@ -69,6 +69,16 @@ async function setupAuthAndListeners() {
             onSnapshot(dbRef, (docSnap) => {
                 if (docSnap.exists() && docSnap.data().tasks && docSnap.data().tasks.length > 0) {
                     state = docSnap.data();
+                    
+                    // ++ FIX: Enrich loaded tasks with details if they are missing from the database ++
+                    const defaultTasks = getInitialTasks();
+                    state.tasks.forEach(task => {
+                        const defaultTask = defaultTasks.find(dt => dt.name === task.name);
+                        if (defaultTask && defaultTask.details && !task.details) {
+                            task.details = defaultTask.details;
+                        }
+                    });
+
                 } else {
                     console.log("No document found or empty tasks. Creating with default detailed state.");
                     state.tasks = getInitialTasks();
@@ -104,7 +114,6 @@ function getInitialTasks() {
                 { id: now(), name: 'Custom Fields Configuration', start: 2, duration: 2, color: 'bg-sky-400' },
                 { id: now(), name: 'Employee Data Import', start: 3, duration: 2, color: 'bg-sky-400' },
             ],
-            // ++ ADDED DETAIL CONTENT FOR THIS TASK ++
             details: {
                 title: 'Core HR Project Workshops',
                 sections: [
@@ -198,9 +207,8 @@ function renderGanttChart() {
 function renderTaskRowRecursive(task, level, tbody, index) {
     const tr = document.createElement('tr');
     tr.dataset.taskId = task.id;
-    // ++ Make row clickable if it has details ++
     if (task.details) {
-        tr.classList.add('cursor-pointer');
+        tr.classList.add('cursor-pointer', 'hover:bg-slate-50');
     }
     
     const isParent = task.children && task.children.length > 0;
@@ -334,7 +342,6 @@ function findTaskById(tasks, taskId) {
     return null;
 }
 
-// ++ NEW FUNCTION TO OPEN THE DETAIL PANEL ++
 function openDetailPanel(task) {
     if (!task.details) return; 
 
@@ -354,7 +361,6 @@ function openDetailPanel(task) {
     detailPanelOverlay.classList.add('is-open');
 }
 
-// ++ NEW FUNCTION TO CLOSE THE DETAIL PANEL ++
 function closeDetailPanel() {
     detailPanel.classList.remove('is-open');
     detailPanelOverlay.classList.remove('is-open');
@@ -370,11 +376,9 @@ function setupEventListeners() {
     document.getElementById('save-milestone-btn').addEventListener('click', handleSaveMilestone);
     document.getElementById('delete-milestone-btn').addEventListener('click', handleDeleteMilestone);
     
-    // ++ ADDED LISTENERS FOR DETAIL PANEL ++
     detailPanelClose.addEventListener('click', closeDetailPanel);
     detailPanelOverlay.addEventListener('click', closeDetailPanel);
     
-    // ++ UPDATED GANTT CLICK LISTENER ++
     ganttContainerEl.addEventListener('click', (e) => {
         const milestoneSymbol = e.target.closest('.milestone-symbol');
         if (milestoneSymbol) {
@@ -386,14 +390,13 @@ function setupEventListeners() {
         if (toggleBtn) {
             const taskId = toggleBtn.closest('tr').dataset.taskId;
             handleToggleExpand(taskId);
-            return; // Don't open the panel if we're just expanding/collapsing
+            return; 
         }
 
         const taskRow = e.target.closest('tr[data-task-id]');
         if(taskRow){
             const taskId = taskRow.dataset.taskId;
             const task = findTaskById(state.tasks, taskId);
-            // Open panel only for top-level tasks with details for this example
             if (task && task.details) {
                 openDetailPanel(task);
             }

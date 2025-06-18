@@ -3,6 +3,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+// Import html2canvas and jspdf libraries for export functionality
+import html2canvas from "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.min.js";
+
+
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBb6OANTAhNAGk9e039n-7jiBtN8MgZ4uM",
@@ -50,6 +55,10 @@ const detailPanelOverlay = document.getElementById('detail-panel-overlay');
 const detailPanelTitle = document.getElementById('detail-panel-title');
 const detailPanelContent = document.getElementById('detail-panel-content');
 const detailPanelClose = document.getElementById('detail-panel-close');
+
+// New export buttons
+const exportPngBtn = document.getElementById('export-png-btn');
+const exportPdfBtn = document.getElementById('export-pdf-btn');
 
 
 // --- INITIALIZATION ---
@@ -499,6 +508,10 @@ function setupEventListeners() {
     
     detailPanelClose.addEventListener('click', closeDetailPanel);
     detailPanelOverlay.addEventListener('click', closeDetailPanel);
+
+    // Event listeners for new export buttons
+    exportPngBtn.addEventListener('click', exportChartAsPng);
+    exportPdfBtn.addEventListener('click', exportChartAsPdf);
     
     ganttContainerEl.addEventListener('click', (e) => {
         const milestoneSymbol = e.target.closest('.milestone-symbol');
@@ -865,4 +878,175 @@ function handleReorderDrop(e) {
 
     draggedItem = null;
     saveState();
+}
+
+/**
+ * Exports the Gantt chart as a PNG image.
+ * Uses html2canvas to render the gantt chart container into a canvas,
+ * then converts the canvas to a data URL and triggers a download.
+ */
+async function exportChartAsPng() {
+    // Show a loading indicator (optional, but good for UX)
+    showInfoModal('Exporting PNG', 'Please wait while the chart is being prepared for download...');
+
+    try {
+        const ganttChartElement = document.getElementById('gantt-chart-container');
+        
+        // Temporarily adjust some styles for better rendering in html2canvas
+        // Remove fixed positioning from the header if it interferes
+        const headerTh = ganttChartElement.querySelector('thead th');
+        let originalHeaderThStyle = '';
+        if (headerTh) {
+            originalHeaderThStyle = headerTh.style.cssText;
+            headerTh.style.position = 'static';
+            headerTh.style.width = 'auto'; // Prevent shrinking
+        }
+
+        const bars = ganttChartElement.querySelectorAll('.gantt-bar');
+        const originalBarStyles = [];
+        bars.forEach(bar => {
+            originalBarStyles.push(bar.style.cssText);
+            bar.style.transform = 'none'; // Reset any transformations that might affect rendering
+            bar.style.justifyContent = 'flex-start'; // Ensure text is visible for export
+        });
+
+        // Ensure all text labels are visible for export
+        const barLabels = ganttChartElement.querySelectorAll('.gantt-bar-label');
+        const originalLabelStyles = [];
+        barLabels.forEach(label => {
+            originalLabelStyles.push(label.style.cssText);
+            label.style.visibility = 'visible';
+            label.style.transform = 'scale(1)';
+        });
+
+
+        // Calculate scroll width and height to capture the entire chart
+        const scrollWidth = ganttChartElement.scrollWidth;
+        const scrollHeight = ganttChartElement.scrollHeight;
+
+        const canvas = await html2canvas(ganttChartElement, {
+            scale: 2, // Increase scale for higher resolution
+            useCORS: true,
+            width: scrollWidth,
+            height: scrollHeight,
+            windowWidth: scrollWidth,
+            windowHeight: scrollHeight,
+            // Ensure background color is captured if the element itself has one
+            backgroundColor: ganttChartElement.style.backgroundColor || '#ffffff' 
+        });
+
+        // Restore original styles
+        if (headerTh) {
+            headerTh.style.cssText = originalHeaderThStyle;
+        }
+        bars.forEach((bar, index) => {
+            bar.style.cssText = originalBarStyles[index];
+        });
+        barLabels.forEach((label, index) => {
+            label.style.cssText = originalLabelStyles[index];
+        });
+        // Re-adjust text labels for display after export
+        ganttContainerEl.querySelectorAll('.gantt-bar').forEach(adjustBarText);
+
+
+        const imgData = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = imgData;
+        link.download = 'gantt-chart.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        hideConfirmationModal(); // Hide loading modal
+        showInfoModal('Export Complete', 'The Gantt chart has been exported as PNG.');
+
+    } catch (error) {
+        console.error('Error exporting chart as PNG:', error);
+        hideConfirmationModal(); // Hide loading modal
+        showInfoModal('Export Failed', 'Could not export chart as PNG. Please try again.');
+    }
+}
+
+/**
+ * Exports the Gantt chart as a PDF document.
+ * Converts the chart to a PNG image using html2canvas, then embeds it into a PDF using jsPDF.
+ */
+async function exportChartAsPdf() {
+    // Show a loading indicator
+    showInfoModal('Exporting PDF', 'Please wait while the chart is being prepared for download...');
+
+    try {
+        const ganttChartElement = document.getElementById('gantt-chart-container');
+        
+        // Temporarily adjust some styles for better rendering in html2canvas
+        const headerTh = ganttChartElement.querySelector('thead th');
+        let originalHeaderThStyle = '';
+        if (headerTh) {
+            originalHeaderThStyle = headerTh.style.cssText;
+            headerTh.style.position = 'static';
+            headerTh.style.width = 'auto'; // Prevent shrinking
+        }
+
+        const bars = ganttChartElement.querySelectorAll('.gantt-bar');
+        const originalBarStyles = [];
+        bars.forEach(bar => {
+            originalBarStyles.push(bar.style.cssText);
+            bar.style.transform = 'none'; // Reset any transformations that might affect rendering
+            bar.style.justifyContent = 'flex-start'; // Ensure text is visible for export
+        });
+
+        const barLabels = ganttChartElement.querySelectorAll('.gantt-bar-label');
+        const originalLabelStyles = [];
+        barLabels.forEach(label => {
+            originalLabelStyles.push(label.style.cssText);
+            label.style.visibility = 'visible';
+            label.style.transform = 'scale(1)';
+        });
+
+
+        const scrollWidth = ganttChartElement.scrollWidth;
+        const scrollHeight = ganttChartElement.scrollHeight;
+
+        const canvas = await html2canvas(ganttChartElement, {
+            scale: 2, // Increase scale for higher resolution
+            useCORS: true,
+            width: scrollWidth,
+            height: scrollHeight,
+            windowWidth: scrollWidth,
+            windowHeight: scrollHeight,
+            backgroundColor: ganttChartElement.style.backgroundColor || '#ffffff'
+        });
+
+        // Restore original styles
+        if (headerTh) {
+            headerTh.style.cssText = originalHeaderThStyle;
+        }
+        bars.forEach((bar, index) => {
+            bar.style.cssText = originalBarStyles[index];
+        });
+        barLabels.forEach((label, index) => {
+            label.style.cssText = originalLabelStyles[index];
+        });
+        // Re-adjust text labels for display after export
+        ganttContainerEl.querySelectorAll('.gantt-bar').forEach(adjustBarText);
+
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: scrollWidth > scrollHeight ? 'landscape' : 'portrait', // Set orientation based on content
+            unit: 'px',
+            format: [scrollWidth, scrollHeight] // Set PDF format to match canvas size
+        });
+
+        pdf.addImage(imgData, 'PNG', 0, 0, scrollWidth, scrollHeight);
+        pdf.save('gantt-chart.pdf');
+
+        hideConfirmationModal(); // Hide loading modal
+        showInfoModal('Export Complete', 'The Gantt chart has been exported as PDF.');
+
+    } catch (error) {
+        console.error('Error exporting chart as PDF:', error);
+        hideConfirmationModal(); // Hide loading modal
+        showInfoModal('Export Failed', 'Could not export chart as PDF. Please try again.');
+    }
 }

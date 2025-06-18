@@ -95,8 +95,12 @@ async function setupAuthAndListeners() {
 
                 } else {
                     console.log("No document found or empty tasks. Creating with default detailed state.");
-                    state.tasks = getInitialTasks();
+                    // FIX: Start with a minimal state, not all tasks.
+                    const defaultTasks = getInitialTasks();
+                    // You can start with just the kick-off task, or an empty array: state.tasks = []
+                    state.tasks = defaultTasks.filter(t => t.name === 'Project Kick-off');
                     state.milestones = [];
+                    state.totalWeeks = 12; // Also ensure totalWeeks has a default
                     saveState(); 
                 }
                 render(); // Re-render with the data from Firebase
@@ -294,8 +298,16 @@ function render() {
 }
 
 function renderModules() {
-    moduleListEl.innerHTML = '';
-    allModules.forEach(mod => {
+    // Get a list of names of tasks already on the chart
+    const addedModuleNames = new Set(state.tasks.map(t => t.name));
+
+    // Filter the list of all modules to only show ones that haven't been added
+    const availableModules = allModules.filter(mod => !addedModuleNames.has(mod));
+
+    moduleListEl.innerHTML = ''; // Clear the list
+    
+    // Render a button for each available module
+    availableModules.forEach(mod => {
         const id = `mod-${mod.replace(/\s+/g, '-')}`;
         const label = document.createElement('label');
         label.htmlFor = id;

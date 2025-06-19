@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "chrome", // or "msedge" if you are using Microsoft Edge
+        "request": "launch",
+        "name": "Launch in Browser",
+        "url": "http://127.0.0.1:5500/index.html", // Paste the URL from Live Server here
+        "webRoot": "${workspaceFolder}"
+      }
+    ]
+  }

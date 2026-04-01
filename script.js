@@ -10,12 +10,13 @@ import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.min.j
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBb6OANTAhNAGk9e039n-7jiBtN8MgZ4uM",
-  authDomain: "gantt-chart-project-fb.firebaseapp.com",
-  projectId: "gantt-chart-project-fb",
-  storageBucket: "gantt-chart-project-fb.firebasestorage.app",
-  messagingSenderId: "1059828755338",
-  appId: "1:1059828755338:web:11c0f418b9e7e3ee3ab673"
+  apiKey: "AIzaSyBfl1qSjVSRfY9CPuwMCH9d4szUc9Y5KBs",
+  authDomain: "gantt-chart-16f54.firebaseapp.com",
+  projectId: "gantt-chart-16f54",
+  storageBucket: "gantt-chart-16f54.firebasestorage.app",
+  messagingSenderId: "875025038286",
+  appId: "1:875025038286:web:317bf11be2587a23f5c99f",
+  measurementId: "G-7JPX402CNR"
 };
 
 const app = initializeApp(firebaseConfig);

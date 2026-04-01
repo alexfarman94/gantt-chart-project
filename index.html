@@ -3,1132 +3,1256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collaborative HiBob Implementation Timeline</title>
-    
+    <title>HiBob Implementation Timeline</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
+        :root {
+            --hibob-coral: #FC5542;
+            --hibob-navy: #1E1F3B;
+            --hibob-coral-light: #FFF0EE;
         }
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+
+        /* ── Gantt bar ── */
         .gantt-bar {
-            position: absolute;
-            height: 70%;
-            top: 15%;
-            z-index: 10;
+            position: absolute; height: 70%; top: 15%; z-index: 10;
             border-radius: 0.375rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            cursor: move;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 0.75rem;
-            overflow: hidden;
-            white-space: nowrap;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0/.1), 0 2px 4px -2px rgb(0 0 0/.1);
+            cursor: move; display: flex; align-items: center;
+            justify-content: space-between; padding: 0 0.75rem;
+            overflow: hidden; white-space: nowrap;
         }
-        .gantt-bar-label {
-            transform-origin: left center;
-            transition: transform 0.1s ease-out;
-            white-space: nowrap;
-        }
-        .gantt-bar.is-dragging {
-            opacity: 0.7;
-            z-index: 20;
-        }
-        .resize-handle {
-            position: absolute;
-            width: 10px;
-            height: 100%;
-            top: 0;
-            z-index: 15;
-            cursor: col-resize;
-        }
+        .gantt-bar-label { transform-origin: left center; transition: transform .1s ease-out; white-space: nowrap; }
+        .gantt-bar.is-dragging { opacity: .7; z-index: 20; }
+
+        .resize-handle { position: absolute; width: 10px; height: 100%; top: 0; z-index: 15; cursor: col-resize; }
         .resize-handle-left { left: 0; }
         .resize-handle-right { right: 0; }
 
         .delete-task-btn {
-            display: none;
-            background: rgba(0,0,0,0.3);
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            border: none;
-            cursor: pointer;
-            flex-shrink: 0;
-            margin-left: 8px;
+            display: none; background: rgba(0,0,0,.3); color: white;
+            border-radius: 50%; width: 20px; height: 20px; border: none;
+            cursor: pointer; flex-shrink: 0; margin-left: 8px;
         }
-        .gantt-bar:hover .delete-task-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .reorder-handle {
-            cursor: grab;
-            color: #94a3b8;
-            visibility: hidden;
-            padding-right: 8px;
-        }
-        tr:hover .reorder-handle {
-            visibility: visible;
-        }
-        .is-reordering {
-            opacity: 0.5;
-            background-color: #f1f5f9;
-        }
-        .drop-indicator-top { border-top: 2px solid #3b82f6; }
-        .drop-indicator-bottom { border-bottom: 2px solid #3b82f6; }
+        .gantt-bar:hover .delete-task-btn { display: flex; align-items: center; justify-content: center; }
 
+        .reorder-handle { cursor: grab; color: #94a3b8; visibility: hidden; padding-right: 8px; }
+        tr:hover .reorder-handle { visibility: visible; }
+        .is-reordering { opacity: .5; background-color: #f1f5f9; }
+        .drop-indicator-top  { border-top:    2px solid var(--hibob-coral); }
+        .drop-indicator-bottom { border-bottom: 2px solid var(--hibob-coral); }
+
+        /* ── Modals ── */
         .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
-            transition: opacity 0.2s ease-in-out;
+            position: fixed; inset: 0; background-color: rgba(0,0,0,.5);
+            display: flex; align-items: center; justify-content: center; z-index: 50;
         }
-        /* Parent-Child Styles */
+
+        /* ── Expand/collapse ── */
         .toggle-expand {
-            cursor: pointer;
-            width: 1rem;
-            height: 1rem;
-            display: inline-block;
-            margin-right: 0.5rem;
-            color: #64748b;
-            flex-shrink: 0;
-            transition: transform 0.2s;
+            cursor: pointer; width: 1rem; height: 1rem; display: inline-block;
+            margin-right: .5rem; color: #64748b; flex-shrink: 0; transition: transform .2s;
         }
-        .toggle-expand.is-expanded {
-             transform: rotate(90deg);
-        }
-        .task-name-container {
-            display: flex;
-            align-items: center;
-        }
-        /* Milestone Symbol */
+        .toggle-expand.is-expanded { transform: rotate(90deg); }
+        .task-name-container { display: flex; align-items: center; }
+
+        /* ── Milestones ── */
         .milestone-symbol {
-            position: absolute;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 12;
-            color: #facc15; /* yellow-400 */
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.2));
+            position: absolute; top: 50%; transform: translate(-50%,-50%);
+            z-index: 12; color: #facc15; width: 24px; height: 24px;
+            cursor: pointer; filter: drop-shadow(0 1px 2px rgb(0 0 0/.2));
         }
         .milestone-symbol .milestone-tooltip {
-            visibility: hidden;
-            width: max-content;
-            background-color: #1f2937; /* gray-800 */
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px 10px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.2s;
+            visibility: hidden; width: max-content; background-color: #1f2937;
+            color: #fff; text-align: center; border-radius: 6px; padding: 5px 10px;
+            position: absolute; z-index: 1; bottom: 125%; left: 50%;
+            transform: translateX(-50%); opacity: 0; transition: opacity .2s;
         }
-        .milestone-symbol:hover .milestone-tooltip {
-            visibility: visible;
-            opacity: 1;
-        }
+        .milestone-symbol:hover .milestone-tooltip { visibility: visible; opacity: 1; }
 
-        /* Detail Panel Styles */
-        #detail-panel.is-open {
-            transform: translateX(0);
-        }
+        /* ── Detail panel ── */
+        #detail-panel { border-left: 4px solid var(--hibob-coral); }
+        #detail-panel.is-open { transform: translateX(0); }
+        #detail-panel-overlay.is-open { opacity: 1; pointer-events: auto; }
 
-        #detail-panel-overlay.is-open {
-            opacity: 1;
-            pointer-events: auto;
+        /* ── Presentation mode ── */
+        .is-presenting .edit-only       { display: none !important; }
+        .is-presenting .gantt-bar       { cursor: default; }
+        .is-presenting .resize-handle   { display: none; }
+        .is-presenting .reorder-handle  { display: none; }
+        .is-presenting .delete-task-btn { display: none !important; }
+
+        #present-indicator { display: none; }
+        .is-presenting #present-indicator { display: flex; }
+        #header-export-buttons { display: none; }
+        .is-presenting #header-export-buttons { display: flex; }
+
+        /* ── Module cards ── */
+        .module-card {
+            display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+            border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer;
+            transition: all .15s; font-weight: 500; font-size: .875rem; background: white;
+            user-select: none;
         }
+        .module-card.selected { border-color: var(--hibob-coral); background-color: var(--hibob-coral-light); }
+        .module-card-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+        /* ── Session picker ── */
+        .session-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; border-radius: 10px; border: 1px solid #e2e8f0;
+            margin-bottom: 8px; background: white; transition: all .15s;
+        }
+        .session-item:hover { border-color: var(--hibob-coral); background-color: var(--hibob-coral-light); }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
 
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl font-bold">Collaborative HiBob Implementation Timeline</h1>
-            <p class="text-slate-500 mt-2">A real-time, interactive Gantt chart for project planning.</p>
-        </header>
-
-        <div class="grid md:grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-sm lg:col-span-2">
-                <h2 class="font-semibold text-lg mb-4">Available Modules</h2>
-                <div id="module-list" class="flex flex-wrap gap-3 mb-4"></div>
-                <button id="add-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors">Add Selected Modules</button>
+<!-- ════════════════════════════════════════
+     SESSION PICKER MODAL
+════════════════════════════════════════ -->
+<div id="session-picker-modal" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="rounded-xl px-3 py-2" style="background:#1E1F3B">
+                <span class="font-bold text-xl text-white">hi<span style="color:#FC5542">bob</span></span>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm">
-                <h2 class="font-semibold text-lg mb-4">Settings & Milestones</h2>
-                <div class="flex items-center gap-4 mb-4">
-                    <label for="total-weeks-input" class="whitespace-nowrap">Timeline:</label>
-                    <input type="number" id="total-weeks-input" class="border rounded-md w-20 p-2" value="12" min="4" max="52">
-                    <button id="update-timeline-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors">Set</button>
+            <div>
+                <h2 class="text-xl font-bold">Customer Timelines</h2>
+                <p class="text-sm text-slate-400">Select or create a timeline</p>
+            </div>
+        </div>
+        <div id="session-list" class="max-h-72 overflow-y-auto mb-4">
+            <p class="text-slate-400 text-sm text-center py-6">Loading…</p>
+        </div>
+        <button id="new-session-btn" class="w-full py-3 rounded-xl font-semibold text-white text-sm transition-colors" style="background:#FC5542">
+            + New Customer Timeline
+        </button>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     NEW SESSION MODAL
+════════════════════════════════════════ -->
+<div id="new-session-modal" class="modal-overlay hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8">
+        <h2 class="text-xl font-bold mb-1">New Customer Timeline</h2>
+        <p class="text-sm text-slate-400 mb-4">Enter the customer's name to create their implementation timeline.</p>
+        <input type="text" id="new-session-name" placeholder="e.g., Acme Corporation"
+               class="w-full border-2 rounded-xl p-3 mb-4 text-sm focus:outline-none"
+               style="border-color:#e2e8f0" onfocus="this.style.borderColor='#FC5542'" onblur="this.style.borderColor='#e2e8f0'">
+        <div class="flex gap-3">
+            <button id="cancel-new-session-btn" class="flex-1 py-2 rounded-xl border font-semibold text-slate-600 text-sm hover:bg-slate-50">Cancel</button>
+            <button id="confirm-new-session-btn" class="flex-1 py-2 rounded-xl font-semibold text-white text-sm" style="background:#FC5542">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MODULE DURATION DIALOG
+════════════════════════════════════════ -->
+<div id="module-duration-modal" class="modal-overlay hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8" style="max-height:90vh;overflow-y:auto">
+        <h2 class="text-xl font-bold mb-1">Customize Module Durations</h2>
+        <p class="text-sm text-slate-400 mb-6">Adjust the default timeline for each module before adding to the chart.</p>
+        <div id="module-duration-list" class="space-y-3 mb-6"></div>
+        <div class="flex gap-3">
+            <button id="cancel-duration-btn" class="flex-1 py-2 rounded-xl border font-semibold text-slate-600 text-sm hover:bg-slate-50">Cancel</button>
+            <button id="confirm-duration-btn" class="flex-1 py-2 rounded-xl font-semibold text-white text-sm" style="background:#FC5542">Add to Timeline</button>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════ -->
+<div id="app" class="hidden">
+
+    <!-- Header -->
+    <header style="background:#1E1F3B" class="px-6 py-4 sticky top-0 z-20">
+        <div class="max-w-screen-2xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+
+            <!-- Left: HiBob + customer name -->
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-2xl text-white">hi<span style="color:#FC5542">bob</span></span>
+                <div class="h-6 w-px bg-white opacity-20"></div>
+                <div>
+                    <p class="text-slate-400 text-xs">Implementation Timeline</p>
+                    <p id="header-customer-name" class="text-white font-semibold text-sm leading-tight"></p>
                 </div>
-                <div class="flex flex-wrap gap-3">
-                    <button id="add-milestone-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-5 rounded-lg transition-colors">Add Milestone</button>
-                    <button id="export-png-btn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors">Export as PNG</button>
-                    <button id="export-pdf-btn" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors">Export as PDF</button>
+            </div>
+
+            <!-- Centre: presenting pill -->
+            <div id="present-indicator" class="items-center gap-2 text-white text-xs font-semibold px-3 py-1 rounded-full" style="background:#FC5542">
+                ● PRESENTING
+            </div>
+
+            <!-- Export buttons (presentation mode only) -->
+            <div id="header-export-buttons" class="items-center gap-2">
+                <button id="header-export-png-btn" class="text-white border border-white border-opacity-30 text-sm font-medium px-4 py-2 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors">Export PNG</button>
+                <button id="header-export-pdf-btn" class="text-white border border-white border-opacity-30 text-sm font-medium px-4 py-2 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors">Export PDF</button>
+            </div>
+
+            <!-- Right: logo + controls -->
+            <div class="flex items-center gap-3">
+                <!-- Customer logo (always shown when present) -->
+                <div id="customer-logo-container" class="hidden items-center">
+                    <img id="customer-logo-img" src="" alt="Customer logo" class="h-10 max-w-[8rem] object-contain rounded">
                 </div>
-            </div>
-        </div>
-        
-        <div class="bg-white rounded-xl shadow-sm overflow-x-auto relative lg:col-span-3">
-            <div id="gantt-chart-container" class="p-4 min-w-[800px] relative">
-            </div>
-        </div>
-        
-        <div class="text-center mt-4 text-xs text-slate-400">
-            <p>App ID: <span id="app-id-display" class="font-mono">loading...</span></p>
-            <p>Your User ID: <span id="user-id-display" class="font-mono">loading...</span></p>
-        </div>
-    </div>
 
-    <!-- Modals -->
-    <div id="milestone-modal" class="modal-overlay hidden">
-        <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm">
-            <h3 id="modal-title" class="text-xl font-bold mb-4">Add Milestone</h3>
-            <input type="hidden" id="milestone-id">
-            <div class="mb-4">
-                <label for="milestone-label-input" class="block mb-2 font-medium">Label</label>
-                <input type="text" id="milestone-label-input" class="w-full border rounded-md p-2" placeholder="e.g., Phase 1 Complete">
-            </div>
-            <div class="mb-6">
-                <label for="milestone-week-input" class="block mb-2 font-medium">Week</label>
-                <input type="number" id="milestone-week-input" class="w-full border rounded-md p-2" min="1">
-            </div>
-            <div class="flex justify-end gap-3">
-                 <button id="delete-milestone-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors hidden">Delete</button>
-                <button id="cancel-milestone-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-4 rounded-lg transition-colors">Cancel</button>
-                <button id="save-milestone-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Save</button>
-            </div>
-        </div>
-    </div>
+                <!-- Upload button (edit mode only) -->
+                <label id="logo-upload-btn" class="edit-only cursor-pointer text-slate-300 hover:text-white text-xs border border-white border-opacity-20 rounded-lg px-3 py-2 transition-colors">
+                    <span id="logo-upload-label">Upload Logo</span>
+                    <input type="file" id="customer-logo-input" accept="image/*" class="hidden">
+                </label>
 
-    <div id="confirmation-modal" class="modal-overlay hidden">
-        <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm text-center">
-            <h3 id="confirmation-title" class="text-xl font-bold mb-2">Are you sure?</h3>
-            <p id="confirmation-message" class="text-slate-600 mb-6">This action cannot be undone.</p>
-            <div id="confirmation-buttons" class="flex justify-center gap-3">
-            </div>
-        </div>
-    </div>
-
-    <!-- Detail Panel -->
-    <div id="detail-panel-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out"></div>
-    <div id="detail-panel" class="fixed top-0 right-0 h-full w-full max-w-lg bg-white shadow-xl z-40 transform translate-x-full transition-transform duration-300 ease-in-out">
-        <div class="p-6 h-full flex flex-col">
-            <div class="flex items-center justify-between mb-4">
-                <h2 id="detail-panel-title" class="text-2xl font-bold"></h2>
-                <button id="detail-panel-close" class="text-slate-500 hover:text-slate-800">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <!-- Present / Edit toggle -->
+                <button id="present-toggle-btn" class="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg text-white transition-colors" style="background:#FC5542">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.361a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+                    <span id="present-toggle-label">Present</span>
                 </button>
-            </div>
-            <div id="detail-panel-content" class="overflow-y-auto flex-grow pr-3 space-y-6">
+
+                <!-- Save + Switch (edit only) -->
+                <div class="flex items-center gap-1 edit-only">
+                    <button id="save-btn" class="text-xs font-medium text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors">Save ✓</button>
+                    <button id="switch-customer-btn" class="text-xs font-medium text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors">Switch Customer</button>
+                </div>
             </div>
         </div>
+    </header>
+
+    <div class="max-w-screen-2xl mx-auto p-4 md:p-6">
+
+        <!-- Controls row (edit only) -->
+        <div class="edit-only grid lg:grid-cols-3 gap-6 mb-6">
+
+            <!-- Module selection -->
+            <div class="bg-white p-6 rounded-xl shadow-sm lg:col-span-2">
+                <h2 class="font-semibold text-base mb-1">Available Modules</h2>
+                <p class="text-xs text-slate-400 mb-4">Click modules to select, then click "Add Selected Modules"</p>
+                <div id="module-list" class="flex flex-wrap gap-2 mb-4 min-h-[2.5rem]"></div>
+                <button id="add-btn" class="font-semibold py-2 px-5 rounded-lg text-white text-sm transition-colors" style="background:#FC5542">Add Selected Modules</button>
+            </div>
+
+            <!-- Settings -->
+            <div class="bg-white p-6 rounded-xl shadow-sm">
+                <h2 class="font-semibold text-base mb-4">Settings</h2>
+                <div class="mb-4">
+                    <p class="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Timeline Duration</p>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="total-weeks-input" class="border rounded-lg w-16 p-2 text-sm text-center" value="12" min="4" max="52">
+                        <span class="text-sm text-slate-400">weeks</span>
+                        <button id="update-timeline-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 px-3 rounded-lg text-sm transition-colors">Set</button>
+                    </div>
+                </div>
+                <div class="border-t pt-4 mb-4">
+                    <p class="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Milestones</p>
+                    <button id="add-milestone-btn" class="text-sm font-medium text-white py-2 px-4 rounded-lg transition-colors" style="background:#FC5542">+ Add Milestone</button>
+                </div>
+                <div class="border-t pt-4">
+                    <p class="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Export</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="export-png-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">PNG</button>
+                        <button id="export-pdf-btn" class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gantt chart -->
+        <div class="bg-white rounded-xl shadow-sm overflow-x-auto relative">
+            <!-- Empty state -->
+            <div id="empty-state" class="hidden flex-col items-center justify-center py-24 px-8 text-center">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4" style="background:#FFF0EE">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#FC5542" stroke-width="1.5">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-700 mb-2">No modules added yet</h3>
+                <p class="text-sm text-slate-400 max-w-xs">Select modules above and click "Add Selected Modules" to build the implementation timeline.</p>
+            </div>
+            <div id="gantt-chart-container" class="p-4 min-w-[800px] relative hidden"></div>
+        </div>
     </div>
+</div><!-- /#app -->
 
-    <!-- External Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<!-- ════════════════════════════════════════
+     MILESTONE MODAL
+════════════════════════════════════════ -->
+<div id="milestone-modal" class="modal-overlay hidden">
+    <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm">
+        <h3 id="modal-title" class="text-xl font-bold mb-4">Add Milestone</h3>
+        <input type="hidden" id="milestone-id">
+        <div class="mb-4">
+            <label class="block mb-2 font-medium text-sm">Label</label>
+            <input type="text" id="milestone-label-input" class="w-full border rounded-lg p-2 text-sm" placeholder="e.g., Phase 1 Complete">
+        </div>
+        <div class="mb-6">
+            <label class="block mb-2 font-medium text-sm">Week</label>
+            <input type="number" id="milestone-week-input" class="w-full border rounded-lg p-2 text-sm" min="1">
+        </div>
+        <div class="flex justify-end gap-3">
+            <button id="delete-milestone-btn" class="hidden bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-sm">Delete</button>
+            <button id="cancel-milestone-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-4 rounded-lg text-sm">Cancel</button>
+            <button id="save-milestone-btn" class="text-white font-semibold py-2 px-4 rounded-lg text-sm" style="background:#FC5542">Save</button>
+        </div>
+    </div>
+</div>
 
-    <!-- Main Application Script -->
-    <script type="module">
-        // Correctly import from the Firebase CDN
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+<!-- ════════════════════════════════════════
+     CONFIRMATION / INFO MODAL
+════════════════════════════════════════ -->
+<div id="confirmation-modal" class="modal-overlay hidden">
+    <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm text-center">
+        <h3 id="confirmation-title" class="text-xl font-bold mb-2">Are you sure?</h3>
+        <p id="confirmation-message" class="text-slate-500 mb-6 text-sm">This action cannot be undone.</p>
+        <div id="confirmation-buttons" class="flex justify-center gap-3"></div>
+    </div>
+</div>
 
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-          apiKey: "AIzaSyBb6OANTAhNAGk9e039n-7jiBtN8MgZ4uM",
-          authDomain: "gantt-chart-project-fb.firebaseapp.com",
-          projectId: "gantt-chart-project-fb",
-          storageBucket: "gantt-chart-project-fb.firebasestorage.app",
-          messagingSenderId: "1059828755338",
-          appId: "1:1059828755338:web:11c0f418b9e7e3ee3ab673"
-        };
+<!-- ════════════════════════════════════════
+     DETAIL PANEL
+════════════════════════════════════════ -->
+<div id="detail-panel-overlay" class="fixed inset-0 bg-black bg-opacity-40 z-30 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+<div id="detail-panel" class="fixed top-0 right-0 h-full w-full max-w-lg bg-white shadow-xl z-40 transform translate-x-full transition-transform duration-300">
+    <div class="p-6 h-full flex flex-col">
+        <div class="flex items-center justify-between mb-6">
+            <h2 id="detail-panel-title" class="text-xl font-bold"></h2>
+            <button id="detail-panel-close" class="text-slate-400 hover:text-slate-700 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div id="detail-panel-content" class="overflow-y-auto flex-grow pr-2 space-y-5"></div>
+    </div>
+</div>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+<!-- External libraries -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-        const allModules = ['Core HR', 'Workforce Planning', 'Compensation', 'Time & Attendance', 'Talent', 'Hiring', 'Learning', 'UK Payroll', 'Sandbox', 'Payroll Hub'];
-        const moduleColors = {
-            'Core HR': 'bg-sky-500',
-            'Workforce Planning': 'bg-violet-500',
-            'Compensation': 'bg-amber-500',
-            'Time & Attendance': 'bg-emerald-500',
-            'Talent': 'bg-rose-500',
-            'Hiring': 'bg-blue-500',
-            'Learning': 'bg-indigo-500',
-            'UK Payroll': 'bg-fuchsia-500',
-            'Sandbox': 'bg-slate-500',
-            'Performance': 'bg-pink-500', // Kept for legacy if needed
-            'Payroll Hub': 'bg-cyan-500'
-        };
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        let state = {
-            tasks: [],
-            milestones: [],
-            totalWeeks: 12
-        };
-        let dbRef;
-        let userId;
+const firebaseConfig = {
+    apiKey: "AIzaSyBb6OANTAhNAGk9e039n-7jiBtN8MgZ4uM",
+    authDomain: "gantt-chart-project-fb.firebaseapp.com",
+    projectId: "gantt-chart-project-fb",
+    storageBucket: "gantt-chart-project-fb.firebasestorage.app",
+    messagingSenderId: "1059828755338",
+    appId: "1:1059828755338:web:11c0f418b9e7e3ee3ab673"
+};
 
-        // --- DOM ELEMENTS ---
-        const moduleListEl = document.getElementById('module-list');
-        const ganttContainerEl = document.getElementById('gantt-chart-container');
-        const weeksInputEl = document.getElementById('total-weeks-input');
-        const detailPanel = document.getElementById('detail-panel');
-        const detailPanelOverlay = document.getElementById('detail-panel-overlay');
-        const detailPanelTitle = document.getElementById('detail-panel-title');
-        const detailPanelContent = document.getElementById('detail-panel-content');
-        const detailPanelClose = document.getElementById('detail-panel-close');
-        const exportPngBtn = document.getElementById('export-png-btn');
-        const exportPdfBtn = document.getElementById('export-pdf-btn');
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const auth = getAuth(firebaseApp);
 
-        // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', init);
+// ── Module definitions ──────────────────────────────────────────
+const allModules = ['Core HR','Workforce Planning','Compensation','Time & Attendance','Talent','Hiring','Learning','UK Payroll','Sandbox','Payroll Hub'];
+const moduleColors = {
+    'Core HR':'bg-sky-500','Workforce Planning':'bg-violet-500','Compensation':'bg-amber-500',
+    'Time & Attendance':'bg-emerald-500','Talent':'bg-rose-500','Hiring':'bg-blue-500',
+    'Learning':'bg-indigo-500','UK Payroll':'bg-fuchsia-500','Sandbox':'bg-slate-500','Payroll Hub':'bg-cyan-500'
+};
+const moduleColorHex = {
+    'Core HR':'#0ea5e9','Workforce Planning':'#8b5cf6','Compensation':'#f59e0b',
+    'Time & Attendance':'#10b981','Talent':'#f43f5e','Hiring':'#3b82f6',
+    'Learning':'#6366f1','UK Payroll':'#d946ef','Sandbox':'#64748b','Payroll Hub':'#06b6d4'
+};
 
-        async function init() {
-            document.getElementById('app-id-display').textContent = firebaseConfig.appId;
-            setupEventListeners();
-            render(); // Render the initial empty state immediately
-            await setupAuthAndListeners(); // Then, attempt to connect to Firebase
+// ── App state ───────────────────────────────────────────────────
+let state = { tasks:[], milestones:[], totalWeeks:12 };
+let session = { sessionId:null, customerName:'', customerLogo:null };
+let dbRef = null;
+let snapshotUnsubscribe = null;
+let isPresentingMode = false;
+let pendingModules = [];
+
+// ── DOM refs ────────────────────────────────────────────────────
+const ganttContainerEl   = document.getElementById('gantt-chart-container');
+const moduleListEl       = document.getElementById('module-list');
+const weeksInputEl       = document.getElementById('total-weeks-input');
+const detailPanel        = document.getElementById('detail-panel');
+const detailPanelOverlay = document.getElementById('detail-panel-overlay');
+const detailPanelTitle   = document.getElementById('detail-panel-title');
+const detailPanelContent = document.getElementById('detail-panel-content');
+const emptyStateEl       = document.getElementById('empty-state');
+const appEl              = document.getElementById('app');
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    setupSessionPickerListeners();
+    setupAppEventListeners();
+
+    onAuthStateChanged(auth, async user => {
+        if (user) await loadSessionList();
+    });
+
+    signInAnonymously(auth).catch(err => {
+        console.error('Auth error:', err);
+        showInfoModal('Authentication Error', 'Could not connect. Please refresh.');
+    });
+});
+
+// ════════════════════════════════════════════════════════════════
+// SESSION MANAGEMENT
+// ════════════════════════════════════════════════════════════════
+const sessionsIndexRef = () => doc(db, 'artifacts', firebaseConfig.appId, 'public', 'data', 'sessions', 'index');
+const sessionDocRef    = id => doc(db, 'artifacts', firebaseConfig.appId, 'public', 'data', 'sessions', id);
+
+async function loadSessionList() {
+    try {
+        const snap = await getDoc(sessionsIndexRef());
+        const sessions = snap.exists() ? (snap.data().sessions || []) : [];
+        renderSessionList(sessions);
+    } catch(e) {
+        console.error('loadSessionList:', e);
+        renderSessionList([]);
+    }
+}
+
+function renderSessionList(sessions) {
+    const listEl = document.getElementById('session-list');
+    if (!sessions.length) {
+        listEl.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">No saved timelines yet. Create one below.</p>';
+        return;
+    }
+    sessions.sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
+    listEl.innerHTML = '';
+    sessions.forEach(s => {
+        const date = s.updatedAt ? new Date(s.updatedAt).toLocaleDateString() : '';
+        const item = document.createElement('div');
+        item.className = 'session-item';
+        item.innerHTML = `
+            <div>
+                <p class="font-semibold text-sm">${s.customerName}</p>
+                ${date ? `<p class="text-xs text-slate-400">Updated ${date}</p>` : ''}
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="load-session-btn text-sm font-semibold text-white px-4 py-1.5 rounded-lg" style="background:#FC5542" data-id="${s.id}" data-name="${s.customerName}">Open</button>
+                <button class="delete-session-btn text-sm text-slate-300 hover:text-red-500 px-2 py-1.5 rounded transition-colors" data-id="${s.id}" data-name="${s.customerName}">✕</button>
+            </div>`;
+        listEl.appendChild(item);
+    });
+    listEl.querySelectorAll('.load-session-btn').forEach(btn =>
+        btn.addEventListener('click', () => openSession(btn.dataset.id, btn.dataset.name)));
+    listEl.querySelectorAll('.delete-session-btn').forEach(btn =>
+        btn.addEventListener('click', () => confirmDeleteSession(btn.dataset.id, btn.dataset.name)));
+}
+
+function setupSessionPickerListeners() {
+    document.getElementById('new-session-btn').addEventListener('click', () => {
+        document.getElementById('new-session-modal').classList.remove('hidden');
+        document.getElementById('new-session-name').focus();
+    });
+    document.getElementById('cancel-new-session-btn').addEventListener('click', closeNewSessionModal);
+    document.getElementById('confirm-new-session-btn').addEventListener('click', createNewSession);
+    document.getElementById('new-session-name').addEventListener('keydown', e => { if (e.key==='Enter') createNewSession(); });
+}
+
+function closeNewSessionModal() {
+    document.getElementById('new-session-modal').classList.add('hidden');
+    document.getElementById('new-session-name').value = '';
+}
+
+async function createNewSession() {
+    const name = document.getElementById('new-session-name').value.trim();
+    if (!name) return;
+    const sessionId = `session_${Date.now()}`;
+    const now = Date.now();
+    await setDoc(sessionDocRef(sessionId), { customerName:name, customerLogo:null, tasks:[], milestones:[], totalWeeks:12, createdAt:now, updatedAt:now });
+    await updateSessionsIndex({ id:sessionId, customerName:name, updatedAt:now });
+    closeNewSessionModal();
+    openSession(sessionId, name);
+}
+
+async function updateSessionsIndex(entry) {
+    const snap = await getDoc(sessionsIndexRef());
+    let sessions = snap.exists() ? (snap.data().sessions || []) : [];
+    const idx = sessions.findIndex(s => s.id === entry.id);
+    if (idx > -1) sessions[idx] = { ...sessions[idx], ...entry };
+    else sessions.push(entry);
+    await setDoc(sessionsIndexRef(), { sessions });
+}
+
+async function openSession(sessionId, customerName) {
+    if (snapshotUnsubscribe) snapshotUnsubscribe();
+    session = { sessionId, customerName, customerLogo: null };
+    dbRef = sessionDocRef(sessionId);
+
+    document.getElementById('session-picker-modal').classList.add('hidden');
+    appEl.classList.remove('hidden');
+    document.getElementById('header-customer-name').textContent = customerName;
+
+    snapshotUnsubscribe = onSnapshot(dbRef, snap => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const templates = getInitialTasks();
+        state.tasks = (data.tasks || []).map(t => {
+            const tmpl = templates.find(x => x.name === t.name);
+            return tmpl ? { ...tmpl, ...t } : t;
+        });
+        state.milestones = data.milestones || [];
+        state.totalWeeks = data.totalWeeks || 12;
+        if (data.customerLogo) { session.customerLogo = data.customerLogo; showCustomerLogo(data.customerLogo); }
+        if (data.customerName) { session.customerName = data.customerName; document.getElementById('header-customer-name').textContent = data.customerName; }
+        render();
+    }, err => {
+        console.error('Snapshot error:', err);
+        showInfoModal('Connection Error', 'Could not load timeline data.');
+    });
+}
+
+async function confirmDeleteSession(sessionId, customerName) {
+    showConfirmationModal(`Delete "${customerName}"?`, 'This permanently deletes this timeline.', async () => {
+        const snap = await getDoc(sessionsIndexRef());
+        if (snap.exists()) {
+            const sessions = (snap.data().sessions || []).filter(s => s.id !== sessionId);
+            await setDoc(sessionsIndexRef(), { sessions });
         }
+        await deleteDoc(sessionDocRef(sessionId));
+        await loadSessionList();
+    });
+}
 
-        async function setupAuthAndListeners() {
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    document.getElementById('user-id-display').textContent = userId;
-                    dbRef = doc(db, 'artifacts', firebaseConfig.appId, 'public', 'data', 'gantt', 'state');
+function switchCustomer() {
+    if (snapshotUnsubscribe) { snapshotUnsubscribe(); snapshotUnsubscribe = null; }
+    dbRef = null;
+    state = { tasks:[], milestones:[], totalWeeks:12 };
+    session = { sessionId:null, customerName:'', customerLogo:null };
+    appEl.classList.add('hidden');
+    document.getElementById('session-picker-modal').classList.remove('hidden');
+    document.getElementById('customer-logo-container').classList.add('hidden');
+    document.getElementById('customer-logo-container').style.display = '';
+    document.getElementById('logo-upload-label').textContent = 'Upload Logo';
+    if (isPresentingMode) togglePresentationMode();
+    loadSessionList();
+}
 
-                    onSnapshot(dbRef, (docSnap) => {
-                        if (docSnap.exists() && docSnap.data().tasks) {
-                            const savedState = docSnap.data();
-                            const defaultTasks = getInitialTasks();
-
-                            state.tasks = (savedState.tasks || []).map(savedTask => {
-                                const template = defaultTasks.find(t => t.name === savedTask.name);
-                                return template ? { ...template, ...savedTask } : savedTask;
-                            });
-
-                            state.milestones = savedState.milestones || [];
-                            state.totalWeeks = savedState.totalWeeks || 12;
-
-                        } else {
-                            console.log("No document found or empty tasks. Creating with default detailed state.");
-                            const defaultTasks = getInitialTasks();
-                            state.tasks = defaultTasks.filter(t => t.name === 'Project Kick-off');
-                            state.milestones = [];
-                            state.totalWeeks = 12;
-                            saveState(); 
-                        }
-                        render();
-                    }, (error) => {
-                        console.error("Firestore snapshot error:", error);
-                        showInfoModal('Connection Error', 'Could not load project data.');
-                    });
-                }
-            });
-
-            try {
-                await signInAnonymously(auth);
-            } catch(error) {
-                console.error("Authentication failed:", error);
-                document.getElementById('user-id-display').textContent = 'Auth Error';
-                showInfoModal('Authentication Error', 'Could not sign in to the collaboration service.');
-            }
+// ════════════════════════════════════════════════════════════════
+// CUSTOMER LOGO
+// ════════════════════════════════════════════════════════════════
+function handleLogoUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+        const base64 = ev.target.result;
+        session.customerLogo = base64;
+        showCustomerLogo(base64);
+        if (dbRef) {
+            await setDoc(dbRef, { customerLogo: base64 }, { merge: true });
+            await updateSessionsIndex({ id: session.sessionId, customerName: session.customerName, updatedAt: Date.now() });
         }
+    };
+    reader.readAsDataURL(file);
+}
 
-        function getInitialTasks() {
-            // ... (rest of the function is unchanged)
-            let idCounter = Date.now();
-            const now = () => idCounter++;
-            return [
-                { id: now(), name: 'Project Kick-off', start: 0, duration: 1, color: 'bg-green-500', children: [], isExpanded: false },
-                { 
-                    id: now(), name: 'Core HR', start: 1, duration: 12, color: moduleColors['Core HR'], isExpanded: false,
-                    children: [
-                        { id: now(), name: 'Onboarding Workflow Setup', start: 1, duration: 2, color: 'bg-sky-400' },
-                        { id: now(), name: 'Custom Fields Configuration', start: 2, duration: 2, color: 'bg-sky-400' },
-                        { id: now(), name: 'Employee Data Import', start: 3, duration: 2, color: 'bg-sky-400' },
-                    ],
-                    details: {
-                        title: 'Core HR Implementation',
-                        sections: [
-                            { heading: 'Bob 101 (Required)', content: "This stage covers the initial configuration that sets you up for long-term success. It includes standard data fields, common permission groups, time off templates, and more." },
-                            { heading: 'Data structure and migration', content: "We will work with you to define your data structure and seamlessly import your data into Bob. This includes planning your data structure to support key business needs with a strategic mindset into your growth plans and focus. Providing hands-on support on data migration, including people and payroll data, we will ensure you have a sound foundation to build on." },
-                            { heading: 'Permissions and system settings', content: 'Should you require customization of user roles and role permissions to support organizational needs, we will work with you to help you define and configure it. This may include site or department-specific settings.'},
-                            { heading: 'Bob 102 (Based on project goals)', content: 'This second stage covers customized configuration workshops to meet your specific organizational needs and get maximum value from Bob.'},
-                            { heading: 'Time off', content: 'Country-specific templates are available in Bob. To meet unique time off needs, we will work through specific use cases to ensure policies are correctly built and assigned to the correct employees. This also includes hands-on support for time off data migration.'},
-                            { heading: 'Flows and task lists', content: "Flows and task lists are the backbone of manager and employee self-service. We will consult on and co-build organizational flows and task lists that support your operations needs. This may include employee onboarding, offboarding, self-service and data update processes."},
-                            { heading: 'Analytics and dashboards', content: 'While Bob has many preconfigured dashboards and reports, we will consult on custom report configuration and report scheduling to meet the analytic needs of your business.'},
-                            { heading: 'Docs', content: "This workshop focuses on document management, including utilizing Bob's eSign functionality."},
-                            { heading: 'Job Catalog', content: "This workshop covers attribute settings, field review, values creation, and mass import of your current job catalog. It does NOT cover recommendation or creation of a job catalog for your company."}
-                        ]
-                    }
-                },
-                // ... other tasks are defined here, no changes needed to them
-                {
-                    id: now(), name: 'Workforce Planning', start: 2, duration: 8, color: moduleColors['Workforce Planning'], children: [], isExpanded: false,
-                    details: {
-                        title: 'Workforce Planning Workshops',
-                        sections: [
-                            { heading: 'People Data', content: "Review of your current People data to support optimization for HiBob’s Workforce Planning Modules." },
-                            { heading: 'Job Catalog', content: "Support in the creation of Bob’s job catalog, assigning attributes to each job, and importing your job catalog." },
-                            { heading: 'Positions', content: "Manage positions in Bob, aligning them to the job catalog and linking them to your current employee structure, including To Be Hired (TBH) positions." },
-                            { heading: 'Automation', content: "Integrate Bob’s WFP elements with Core HR processes like new hire flows, and support setup of Greenhouse ATS integration." },
-                            { heading: 'Planning Events', content: "Workshop for setting up your first workforce planning event in Bob, including scope, planners, and permissions." },
-                            { heading: 'Analytics', content: "Track & measure your KPIs, review planned positions, and compare them with your recruitment pipeline." }
-                        ]
-                    }
-                },
-                { 
-                    id: now(), name: 'Compensation', start: 3, duration: 6, color: moduleColors['Compensation'], isExpanded: false,
-                    children: [
-                        { id: now(), name: 'Compensation Benchmarking', start: 3, duration: 2, color: 'bg-amber-400' },
-                        { id: now(), name: 'Salary Structure Setup', start: 5, duration: 2, color: 'bg-amber-400' },
-                        { id: now(), name: 'Bonus Plan Configuration', start: 6, duration: 2, color: 'bg-amber-400' },
-                    ],
-                    details: {
-                        title: 'Compensation Workshops',
-                        sections: [
-                            { heading: 'Data Import', content: 'Ensuring that your people and payroll data supports your strategy within compensation and the relevant metrics are available to make data based decisions.' },
-                            { heading: 'Event Enablement', content: 'Workshops focused on setting up your compensation event, including components, participants vs eligibility, budgets, and benchmarking.' },
-                            { heading: 'Compensation Bands', content: 'Also known as salary bands, this allows you to set the minimum, mid, and maximum amount a company will pay someone.' },
-                            { heading: 'Worksheet Management', content: 'Utilizing Hibob’s compensation management for both admin and manager views to support end-user enablement and usability, including running and closing an event.' }
-                        ]
-                    }
-                },
-                {
-                    id: now(), name: 'Time & Attendance', start: 4, duration: 4, color: moduleColors['Time & Attendance'], children: [], isExpanded: false,
-                    details: {
-                        title: 'Time & Attendance Workshops',
-                        sections: [
-                            { heading: 'People Data & Discovery', content: "Review of your current People data and setup of Time & Attendance reporting requirements." },
-                            { heading: 'Time & Attendance Cycles', content: "Enablement and solutionizing on set up of T&A cycles, including required approval flow processes." },
-                            { heading: 'Project Tracking', content: "Use Project tracking to create projects and tasks and assign employees to gain insights into where resource time is being used." },
-                            { heading: 'Clock Integration (Optional)', content: "Set up and open a Clock Integration within HiBob." }
-                        ]
-                    }
-                },
-                {
-                    id: now(), name: 'Talent', start: 5, duration: 4, color: moduleColors['Talent'], children: [], isExpanded: false,
-                    details: {
-                        title: 'Talent Workshops',
-                        sections: [
-                            { heading: 'Performance Reviews', content: 'Create & develop a seamless way to deliver qualitative performance reviews, including self, manager, peer, and upward feedback.' },
-                            { heading: 'Goals', content: 'Inspire productivity by setting goals to keep everyone on track and aligned, empowering managers to motivate and drive outcomes.' },
-                            { heading: '1on1s', content: 'Support a dialogue between employees and managers with regular 1-on-1 check-ins to create a culture of ongoing feedback.' },
-                            { heading: 'Surveys', content: 'Empower leaders to make informed decisions by using company surveys to understand sentiment and guide action plans.' },
-                            { heading: 'Talent Groups', content: 'Helps admins and managers support culture initiatives by nominating and identifying employees based on their interactions.' }
-                        ]
-                    }
-                },
-                {
-                    id: now(), name: 'Hiring', start: 6, duration: 6, color: moduleColors['Hiring'], children: [], isExpanded: false,
-                    details: {
-                        title: 'Hiring Workshops',
-                        sections: [
-                            { heading: 'Data Import', content: "Hands-on support with data import process for job openings and candidate details." },
-                            { heading: 'Hiring Settings', content: "Overview and configuration of settings, permissions, hiring roles, fields (offer, candidate, job), approval flows, and templates." },
-                            { heading: 'Job Openings & Candidate Management', content: "Enablement on Job opening structure, process, and candidate flow in the hiring pipeline." },
-                            { heading: 'Integrations & Job Marketing', content: "Guidance and support on Job Marketing and Integrations, with step-by-step setup guides for career pages, calendars, job boards, and emails." },
-                            { heading: 'Hiring Analytics', content: "Uncover key analysis of your hiring process to support visibility of your Hiring KPIs with tailored reports." }
-                        ]
-                    }
-                },
-                {
-                    id: now(), name: 'Learning', start: 7, duration: 6, color: moduleColors['Learning'], children: [], isExpanded: false,
-                    details: {
-                        title: 'Learning Workshops',
-                        sections: [
-                            { heading: 'Learning Fundamentals', content: "Set up permissions across your organization, allowing key stakeholders visibility to HiBob learning and outcomes." },
-                            { heading: 'Training Catalog', content: "Set up learning courses (via integration partners or manually) to align with your business options. Grant provider access and set up categories, tags, and filters." },
-                            { heading: 'Course Assignment & Progression', content: "Assign courses from your training catalog to your employees and empower your managers to monitor their learning journey." }
-                        ]
-                    }
-                },
-                {
-                    id: now(), name: 'UK Payroll', start: 8, duration: 4, color: moduleColors['UK Payroll'], children: [], isExpanded: false,
-                    details: {
-                        title: 'Payroll Hub Workshops',
-                        sections: [
-                            { heading: 'Discovery', content: "Review and understand your payroll cycles, reporting requirements and current employee data to support Payroll Hub Implementation." },
-                            { heading: 'Payroll Hub Integration', content: "Workshop and build your first Hibob payroll hub report configuration, including field mapping, data upload, and cycle setup." },
-                            { heading: 'Validation', content: "Review and run payroll in parallel with Bob to validate data flows between Bob and your payroll solution." }
-                        ]
-                    }
-                },
-                {
-                    id: now(), name: 'Payroll Hub', start: 8, duration: 4, color: moduleColors['Payroll Hub'], children: [], isExpanded: false,
-                    details: {
-                        title: 'Payroll Hub Workshops',
-                        sections: [
-                            { heading: 'Discovery', content: "Review and understand your payroll cycles, reporting requirements and current employee data to support Payroll Hub Implementation." },
-                            { heading: 'Payroll Hub Integration', content: "Workshop and build your first Hibob payroll hub report configuration, including field mapping, data upload, and cycle setup." },
-                            { heading: 'Validation', content: "Review and run payroll in parallel with Bob to validate data flows between Bob and your payroll solution." }
-                        ]
-                    }
-                }
-            ];
+function showCustomerLogo(base64) {
+    document.getElementById('customer-logo-img').src = base64;
+    const container = document.getElementById('customer-logo-container');
+    container.classList.remove('hidden');
+    container.style.display = 'flex';
+    document.getElementById('logo-upload-label').textContent = 'Change Logo';
+}
+
+// ════════════════════════════════════════════════════════════════
+// PRESENTATION MODE
+// ════════════════════════════════════════════════════════════════
+function togglePresentationMode() {
+    isPresentingMode = !isPresentingMode;
+    const btn = document.getElementById('present-toggle-btn');
+    document.getElementById('present-toggle-label').textContent = isPresentingMode ? 'Edit' : 'Present';
+    btn.style.background = isPresentingMode ? '#64748b' : '#FC5542';
+    if (isPresentingMode) document.body.classList.add('is-presenting');
+    else document.body.classList.remove('is-presenting');
+}
+
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+function saveState() {
+    if (!dbRef) return;
+    const now = Date.now();
+    setDoc(dbRef, { tasks: state.tasks, milestones: state.milestones, totalWeeks: state.totalWeeks, updatedAt: now }, { merge: true })
+        .then(() => updateSessionsIndex({ id: session.sessionId, customerName: session.customerName, updatedAt: now }))
+        .catch(err => { console.error('Save error:', err); showInfoModal('Save Error','Could not save changes.'); });
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════════════════
+function render() {
+    renderModules();
+    weeksInputEl.value = state.totalWeeks;
+    if (state.tasks.length === 0) {
+        emptyStateEl.classList.remove('hidden');
+        emptyStateEl.style.display = 'flex';
+        ganttContainerEl.classList.add('hidden');
+    } else {
+        emptyStateEl.classList.add('hidden');
+        emptyStateEl.style.display = '';
+        ganttContainerEl.classList.remove('hidden');
+        renderGanttChart();
+    }
+}
+
+function renderModules() {
+    const added = new Set(state.tasks.map(t => t.name));
+    const available = allModules.filter(m => !added.has(m));
+    moduleListEl.innerHTML = '';
+    if (!available.length) {
+        moduleListEl.innerHTML = '<p class="text-xs text-slate-400 py-1">All modules added.</p>';
+        return;
+    }
+    available.forEach(mod => {
+        const card = document.createElement('div');
+        card.className = 'module-card';
+        card.dataset.module = mod;
+        const swatch = document.createElement('div');
+        swatch.className = 'module-card-swatch';
+        swatch.style.backgroundColor = moduleColorHex[mod] || '#94a3b8';
+        card.appendChild(swatch);
+        card.appendChild(document.createTextNode(mod));
+        card.addEventListener('click', () => card.classList.toggle('selected'));
+        moduleListEl.appendChild(card);
+    });
+}
+
+function renderGanttChart() {
+    ganttContainerEl.innerHTML = '';
+    const table = document.createElement('table');
+    table.className = 'w-full border-collapse';
+
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = `<th class="sticky left-0 bg-white w-56 p-3 text-left font-semibold border-b z-20 text-sm">Task</th>`;
+    for (let i = 1; i <= state.totalWeeks; i++) {
+        headerRow.innerHTML += `<th class="p-2 text-slate-400 font-medium border-b border-l text-xs">W${i}</th>`;
+    }
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    (state.tasks || []).forEach((task, i) => renderTaskRowRecursive(task, 0, tbody, i));
+    table.appendChild(tbody);
+    ganttContainerEl.appendChild(table);
+
+    setupGanttEventListeners();
+    requestAnimationFrame(() => ganttContainerEl.querySelectorAll('.gantt-bar').forEach(adjustBarText));
+}
+
+function renderTaskRowRecursive(task, level, tbody, index) {
+    const tr = document.createElement('tr');
+    tr.dataset.taskId = task.id;
+    if (task.details) tr.classList.add('cursor-pointer', 'hover:bg-slate-50');
+
+    const isParent = task.children && task.children.length > 0;
+    if (level === 0) { tr.dataset.index = index; tr.draggable = true; }
+
+    const nameCell = document.createElement('td');
+    nameCell.className = 'sticky left-0 bg-white p-3 border-b border-r';
+    nameCell.style.paddingLeft = `${0.75 + level * 1.5}rem`;
+
+    const nameContainer = document.createElement('div');
+    nameContainer.className = 'task-name-container gap-1';
+
+    if (level === 0) nameContainer.innerHTML += `<span class="reorder-handle text-base">⠿</span>`;
+    else nameContainer.innerHTML += `<span class="w-4 inline-block"></span>`;
+
+    if (isParent) {
+        const cls = task.isExpanded ? 'toggle-expand is-expanded' : 'toggle-expand';
+        nameContainer.innerHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="${cls}"><polyline points="9 18 15 12 9 6"/></svg>`;
+    } else if (level > 0) {
+        nameContainer.innerHTML += `<span class="w-4 inline-block ml-2"></span>`;
+    }
+
+    nameContainer.innerHTML += `<span class="font-medium text-sm">${task.name}</span>`;
+    nameCell.appendChild(nameContainer);
+    tr.appendChild(nameCell);
+
+    const ganttCell = document.createElement('td');
+    ganttCell.colSpan = state.totalWeeks;
+    ganttCell.className = 'relative p-0 border-b';
+    ganttCell.style.height = '56px';
+
+    for (let i = 0; i < state.totalWeeks; i++) {
+        const line = document.createElement('div');
+        line.className = 'absolute top-0 bottom-0 border-l border-slate-100';
+        line.style.left = `calc(${i / state.totalWeeks} * 100%)`;
+        ganttCell.appendChild(line);
+    }
+
+    ganttCell.appendChild(createGanttBar(task));
+
+    (state.milestones || []).filter(ms => ms.taskId == task.id).forEach(ms => {
+        const star = document.createElement('div');
+        star.className = 'milestone-symbol';
+        star.dataset.milestoneId = ms.id;
+        star.style.left = `calc(${(ms.week - 0.5) / state.totalWeeks} * 100%)`;
+        star.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="#a16207" stroke-width="1"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span class="milestone-tooltip">${ms.label}</span>`;
+        ganttCell.appendChild(star);
+    });
+
+    tr.appendChild(ganttCell);
+    tbody.appendChild(tr);
+
+    if (isParent && task.isExpanded) {
+        task.children.forEach(child => renderTaskRowRecursive(child, level + 1, tbody));
+    }
+}
+
+function createGanttBar(task) {
+    const bar = document.createElement('div');
+    bar.className = `gantt-bar text-white ${task.color}`;
+    bar.style.left  = `calc(${task.start    / state.totalWeeks} * 100%)`;
+    bar.style.width = `calc(${task.duration / state.totalWeeks} * 100%)`;
+    bar.dataset.taskId = task.id;
+
+    const label = document.createElement('span');
+    label.className = 'gantt-bar-label text-xs font-medium';
+    label.textContent = task.name;
+    bar.appendChild(label);
+
+    const del = document.createElement('button');
+    del.className = 'delete-task-btn edit-only';
+    del.innerHTML = '&times;';
+    del.dataset.taskId = task.id;
+    bar.appendChild(del);
+
+    const lh = document.createElement('div');
+    lh.className = 'resize-handle resize-handle-left';
+    bar.appendChild(lh);
+    const rh = document.createElement('div');
+    rh.className = 'resize-handle resize-handle-right';
+    bar.appendChild(rh);
+
+    return bar;
+}
+
+function adjustBarText(bar) {
+    const label = bar.querySelector('.gantt-bar-label');
+    if (!label) return;
+    label.style.transform = 'scale(1)';
+    const textW = label.scrollWidth;
+    const avail = bar.clientWidth - 45;
+    if (textW <= avail) { label.style.visibility = 'visible'; return; }
+    const scale = avail / textW;
+    if (scale < 0.5) label.style.visibility = 'hidden';
+    else { label.style.visibility = 'visible'; label.style.transform = `scale(${scale})`; }
+}
+
+// ════════════════════════════════════════════════════════════════
+// EVENT LISTENERS
+// ════════════════════════════════════════════════════════════════
+function setupAppEventListeners() {
+    document.getElementById('update-timeline-btn').addEventListener('click', handleUpdateTimeline);
+    document.getElementById('add-btn').addEventListener('click', handleAddModulesClick);
+    document.getElementById('add-milestone-btn').addEventListener('click', () => handleOpenMilestoneModal());
+    document.getElementById('cancel-milestone-btn').addEventListener('click', handleCloseMilestoneModal);
+    document.getElementById('save-milestone-btn').addEventListener('click', handleSaveMilestone);
+    document.getElementById('delete-milestone-btn').addEventListener('click', handleDeleteMilestone);
+    document.getElementById('export-png-btn').addEventListener('click', exportChartAsPng);
+    document.getElementById('export-pdf-btn').addEventListener('click', exportChartAsPdf);
+    document.getElementById('header-export-png-btn').addEventListener('click', exportChartAsPng);
+    document.getElementById('header-export-pdf-btn').addEventListener('click', exportChartAsPdf);
+    document.getElementById('present-toggle-btn').addEventListener('click', togglePresentationMode);
+    document.getElementById('switch-customer-btn').addEventListener('click', switchCustomer);
+    document.getElementById('save-btn').addEventListener('click', () => {
+        saveState();
+        const btn = document.getElementById('save-btn');
+        btn.textContent = 'Saved ✓';
+        setTimeout(() => btn.textContent = 'Save ✓', 2000);
+    });
+    document.getElementById('detail-panel-close').addEventListener('click', closeDetailPanel);
+    detailPanelOverlay.addEventListener('click', closeDetailPanel);
+    document.getElementById('cancel-duration-btn').addEventListener('click', () => {
+        document.getElementById('module-duration-modal').classList.add('hidden');
+        pendingModules = [];
+    });
+    document.getElementById('confirm-duration-btn').addEventListener('click', handleConfirmAddModules);
+    document.getElementById('customer-logo-input').addEventListener('change', handleLogoUpload);
+
+    document.addEventListener('keydown', e => {
+        if ((e.key === 'p' || e.key === 'P') && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+            togglePresentationMode();
         }
+    });
 
-        function saveState() {
-            if (!dbRef) return;
-            setDoc(dbRef, state, { merge: true }).catch(error => {
-                console.error("Error saving state:", error);
-                showInfoModal('Save Error', 'Could not save changes to the project.');
-            });
+    ganttContainerEl.addEventListener('click', e => {
+        const ms = e.target.closest('.milestone-symbol');
+        if (ms) { handleOpenMilestoneModal(ms.dataset.milestoneId); return; }
+        const tog = e.target.closest('.toggle-expand');
+        if (tog) { handleToggleExpand(tog.closest('tr').dataset.taskId); return; }
+        const row = e.target.closest('tr[data-task-id]');
+        if (row) { const t = findTaskById(state.tasks, row.dataset.taskId); if (t && t.details) openDetailPanel(t); }
+    });
+}
+
+function setupGanttEventListeners() {
+    ganttContainerEl.querySelectorAll('.gantt-bar').forEach(b => b.addEventListener('mousedown', handleDragStart));
+    ganttContainerEl.querySelectorAll('.delete-task-btn').forEach(b => b.addEventListener('click', handleDeleteTask));
+    ganttContainerEl.querySelectorAll('tr[draggable="true"]').forEach(tr => {
+        tr.addEventListener('dragstart', handleReorderStart);
+        tr.addEventListener('dragover',  handleReorderOver);
+        tr.addEventListener('dragleave', handleReorderLeave);
+        tr.addEventListener('drop',      handleReorderDrop);
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODULE DURATION DIALOG
+// ════════════════════════════════════════════════════════════════
+function handleAddModulesClick() {
+    const selected = moduleListEl.querySelectorAll('.module-card.selected');
+    if (!selected.length) return;
+    pendingModules = Array.from(selected).map(c => c.dataset.module);
+
+    const templates = getInitialTasks();
+    const listEl = document.getElementById('module-duration-list');
+    listEl.innerHTML = '';
+
+    pendingModules.forEach(mod => {
+        const tmpl = templates.find(t => t.name === mod);
+        const defDur = tmpl ? tmpl.duration : 8;
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50';
+        row.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full flex-shrink-0" style="background:${moduleColorHex[mod]||'#94a3b8'}"></div>
+                <span class="font-medium text-sm">${mod}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="number" class="module-duration-input border rounded-lg w-16 p-2 text-sm text-center" value="${defDur}" min="1" max="52" data-module="${mod}">
+                <span class="text-xs text-slate-400">wks</span>
+            </div>`;
+        listEl.appendChild(row);
+    });
+
+    document.getElementById('module-duration-modal').classList.remove('hidden');
+}
+
+function handleConfirmAddModules() {
+    const templates = getInitialTasks();
+    document.querySelectorAll('.module-duration-input').forEach(input => {
+        const mod = input.dataset.module;
+        const dur = Math.max(1, Math.min(52, parseInt(input.value) || 8));
+        if (state.tasks.some(t => t.name === mod)) return;
+        const tmpl = templates.find(t => t.name === mod);
+        if (!tmpl) return;
+        const task = JSON.parse(JSON.stringify(tmpl));
+        task.id = Date.now() + Math.random();
+        task.duration = dur;
+        if (task.children && task.children.length) {
+            const ratio = dur / tmpl.duration;
+            task.children = task.children.map(c => ({ ...c, id: Date.now() + Math.random(), duration: Math.max(1, Math.round(c.duration * ratio)) }));
         }
-        
-        // --- RENDERING ---
-        function render() {
-            if (!ganttContainerEl) return;
-            renderModules();
-            weeksInputEl.value = state.totalWeeks;
-            renderGanttChart();
+        state.tasks.push(task);
+    });
+    moduleListEl.querySelectorAll('.module-card.selected').forEach(c => c.classList.remove('selected'));
+    document.getElementById('module-duration-modal').classList.add('hidden');
+    pendingModules = [];
+    saveState();
+}
+
+// ════════════════════════════════════════════════════════════════
+// TASK UTILITIES
+// ════════════════════════════════════════════════════════════════
+function findTaskById(tasks, id) {
+    for (const t of tasks) {
+        if (t.id == id) return t;
+        if (t.children) { const f = findTaskById(t.children, id); if (f) return f; }
+    }
+    return null;
+}
+
+function handleToggleExpand(taskId) {
+    const t = findTaskById(state.tasks, taskId);
+    if (t && t.children) { t.isExpanded = !t.isExpanded; saveState(); }
+}
+
+function handleUpdateTimeline() {
+    const w = parseInt(weeksInputEl.value);
+    if (isNaN(w) || w < 4 || w > 52) { showInfoModal('Invalid Input','Enter a value between 4 and 52 weeks.'); weeksInputEl.value = state.totalWeeks; return; }
+    state.totalWeeks = w;
+    const constrain = tasks => (tasks||[]).forEach(t => {
+        if (t.start >= w) { t.start = w-1; t.duration = 1; }
+        else if (t.start + t.duration > w) t.duration = w - t.start;
+        if (t.children) constrain(t.children);
+    });
+    constrain(state.tasks);
+    saveState();
+}
+
+function handleDeleteTask(e) {
+    e.stopPropagation();
+    const taskId = e.currentTarget.dataset.taskId;
+    const del = (tasks, id) => {
+        for (let i = 0; i < tasks.length; i++) {
+            if (tasks[i].id == id) { tasks.splice(i,1); return true; }
+            if (tasks[i].children && del(tasks[i].children, id)) return true;
         }
+        return false;
+    };
+    showConfirmationModal('Delete Task?','This will remove the task and all sub-tasks.', () => { if (del(state.tasks, taskId)) saveState(); });
+}
 
-        function renderModules() {
-            const addedModuleNames = new Set(state.tasks.map(t => t.name));
-            const availableModules = allModules.filter(mod => !addedModuleNames.has(mod));
-            moduleListEl.innerHTML = '';
-            availableModules.forEach(mod => {
-                const id = `mod-${mod.replace(/\s+/g, '-')}`;
-                const label = document.createElement('label');
-                label.htmlFor = id;
-                label.className = 'cursor-pointer';
-                label.innerHTML = `<input type="checkbox" id="${id}" value="${mod}" class="hidden peer"><span class="peer-checked:bg-blue-100 peer-checked:text-blue-700 px-4 py-2 rounded-full border border-slate-300 transition-colors">${mod}</span>`;
-                moduleListEl.appendChild(label);
-            });
+// ════════════════════════════════════════════════════════════════
+// DETAIL PANEL
+// ════════════════════════════════════════════════════════════════
+function openDetailPanel(task) {
+    if (!task.details) return;
+    detailPanelTitle.textContent = task.details.title;
+    detailPanelContent.innerHTML = '';
+    task.details.sections.forEach(s => {
+        const el = document.createElement('div');
+        el.innerHTML = `<h3 class="font-semibold text-sm mb-1.5" style="color:#FC5542">${s.heading}</h3><p class="text-slate-600 text-sm leading-relaxed">${s.content}</p>`;
+        detailPanelContent.appendChild(el);
+    });
+    detailPanel.classList.add('is-open');
+    detailPanelOverlay.classList.add('is-open');
+}
+
+function closeDetailPanel() {
+    detailPanel.classList.remove('is-open');
+    detailPanelOverlay.classList.remove('is-open');
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════════════════════════════
+function showConfirmationModal(title, message, onConfirm) {
+    const modal = document.getElementById('confirmation-modal');
+    modal.querySelector('#confirmation-title').textContent = title;
+    modal.querySelector('#confirmation-message').textContent = message;
+    modal.querySelector('#confirmation-buttons').innerHTML = `
+        <button id="confirm-cancel" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-5 rounded-lg text-sm">Cancel</button>
+        <button id="confirm-ok" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-5 rounded-lg text-sm">Delete</button>`;
+    modal.classList.remove('hidden');
+    document.getElementById('confirm-ok').onclick = () => { onConfirm(); hideConfirmationModal(); };
+    document.getElementById('confirm-cancel').onclick = hideConfirmationModal;
+}
+
+function showInfoModal(title, message) {
+    const modal = document.getElementById('confirmation-modal');
+    modal.querySelector('#confirmation-title').textContent = title;
+    modal.querySelector('#confirmation-message').textContent = message;
+    modal.querySelector('#confirmation-buttons').innerHTML = `<button id="info-ok" class="text-white font-semibold py-2 px-5 rounded-lg text-sm" style="background:#FC5542">OK</button>`;
+    modal.classList.remove('hidden');
+    document.getElementById('info-ok').onclick = hideConfirmationModal;
+}
+
+function hideConfirmationModal() { document.getElementById('confirmation-modal').classList.add('hidden'); }
+
+function handleOpenMilestoneModal(milestoneId = null) {
+    const modal = document.getElementById('milestone-modal');
+    const idInput = document.getElementById('milestone-id');
+    const labelInput = document.getElementById('milestone-label-input');
+    const weekInput = document.getElementById('milestone-week-input');
+    const delBtn = document.getElementById('delete-milestone-btn');
+
+    if (milestoneId) {
+        const ms = (state.milestones||[]).find(m => m.id == milestoneId);
+        if (ms) { document.getElementById('modal-title').textContent='Edit Milestone'; idInput.value=ms.id; labelInput.value=ms.label; weekInput.value=ms.week; delBtn.classList.remove('hidden'); }
+    } else {
+        document.getElementById('modal-title').textContent='Add Milestone';
+        idInput.value=''; labelInput.value=''; weekInput.value='';
+        delBtn.classList.add('hidden');
+    }
+    weekInput.max = state.totalWeeks;
+    modal.classList.remove('hidden');
+}
+
+function handleCloseMilestoneModal() { document.getElementById('milestone-modal').classList.add('hidden'); }
+
+function handleSaveMilestone() {
+    const id = document.getElementById('milestone-id').value;
+    const label = document.getElementById('milestone-label-input').value.trim();
+    const week = parseInt(document.getElementById('milestone-week-input').value);
+    if (!label || isNaN(week) || week < 1 || week > state.totalWeeks) {
+        showInfoModal('Invalid Input', `Provide a label and week number (1–${state.totalWeeks}).`); return;
+    }
+    if (!state.milestones) state.milestones = [];
+    if (id) { const i = state.milestones.findIndex(m => m.id == id); if (i > -1) state.milestones[i] = { ...state.milestones[i], label, week }; }
+    else state.milestones.push({ id: Date.now(), label, week, taskId: null });
+    saveState(); handleCloseMilestoneModal();
+}
+
+function handleDeleteMilestone() {
+    const id = document.getElementById('milestone-id').value;
+    if (!id) return;
+    showConfirmationModal('Delete Milestone?','Are you sure?', () => {
+        state.milestones = state.milestones.filter(m => m.id != id);
+        saveState(); handleCloseMilestoneModal();
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// DRAG / RESIZE / REORDER
+// ════════════════════════════════════════════════════════════════
+let dragInfo = {};
+function handleDragStart(e) {
+    if (isPresentingMode) return;
+    if (e.target.classList.contains('resize-handle')) { handleResizeStart(e); return; }
+    e.preventDefault();
+    const bar = e.currentTarget;
+    const task = findTaskById(state.tasks, bar.dataset.taskId);
+    if (!task) return;
+    bar.classList.add('is-dragging');
+    const ww = ganttContainerEl.querySelector('td[colspan]').offsetWidth / state.totalWeeks;
+    dragInfo = { task, bar, ww, startX: e.clientX, initialStart: task.start };
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd, { once: true });
+}
+function handleDragMove(e) {
+    if (!dragInfo.task) return;
+    let s = dragInfo.initialStart + Math.round((e.clientX - dragInfo.startX) / dragInfo.ww);
+    s = Math.max(0, Math.min(state.totalWeeks - dragInfo.task.duration, s));
+    dragInfo.bar.style.left = `calc(${s / state.totalWeeks} * 100%)`;
+    dragInfo.currentStart = s;
+}
+function handleDragEnd() {
+    dragInfo.bar.classList.remove('is-dragging');
+    if (dragInfo.currentStart !== undefined && dragInfo.currentStart !== dragInfo.task.start) { dragInfo.task.start = dragInfo.currentStart; saveState(); }
+    dragInfo = {};
+    document.removeEventListener('mousemove', handleDragMove);
+}
+
+let resizeInfo = {};
+function handleResizeStart(e) {
+    if (isPresentingMode) return;
+    e.stopPropagation(); e.preventDefault();
+    const handle = e.target;
+    const bar = handle.closest('.gantt-bar');
+    const task = findTaskById(state.tasks, bar.dataset.taskId);
+    if (!task) return;
+    const ww = ganttContainerEl.querySelector('td[colspan]').offsetWidth / state.totalWeeks;
+    resizeInfo = { task, bar, ww, isLeft: handle.classList.contains('resize-handle-left'), startX: e.clientX, initialStart: task.start, initialDuration: task.duration };
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd, { once: true });
+}
+function handleResizeMove(e) {
+    if (!resizeInfo.task) return;
+    const dw = Math.round((e.clientX - resizeInfo.startX) / resizeInfo.ww);
+    if (resizeInfo.isLeft) {
+        let ns = resizeInfo.initialStart + dw, nd = resizeInfo.initialDuration - dw;
+        if (ns < 0 || nd < 1) return;
+        resizeInfo.task.start = ns; resizeInfo.task.duration = nd;
+        resizeInfo.bar.style.left = `calc(${ns / state.totalWeeks} * 100%)`;
+        resizeInfo.bar.style.width = `calc(${nd / state.totalWeeks} * 100%)`;
+    } else {
+        let nd = resizeInfo.initialDuration + dw;
+        if (nd < 1 || resizeInfo.task.start + nd > state.totalWeeks) return;
+        resizeInfo.task.duration = nd;
+        resizeInfo.bar.style.width = `calc(${nd / state.totalWeeks} * 100%)`;
+    }
+    adjustBarText(resizeInfo.bar);
+}
+function handleResizeEnd() { if (resizeInfo.task) saveState(); resizeInfo = {}; document.removeEventListener('mousemove', handleResizeMove); }
+
+let draggedItem = null;
+function handleReorderStart(e) {
+    if (isPresentingMode) return;
+    draggedItem = e.target;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => e.target.classList.add('is-reordering'), 0);
+}
+function handleReorderOver(e) {
+    e.preventDefault();
+    const target = e.target.closest('tr[draggable="true"]');
+    if (!target || !draggedItem || target === draggedItem) return;
+    ganttContainerEl.querySelectorAll('tr').forEach(r => r.classList.remove('drop-indicator-top','drop-indicator-bottom'));
+    const rect = target.getBoundingClientRect();
+    target.classList.add(e.clientY < rect.top + rect.height/2 ? 'drop-indicator-top' : 'drop-indicator-bottom');
+}
+function handleReorderLeave(e) { e.target.closest('tr')?.classList.remove('drop-indicator-top','drop-indicator-bottom'); }
+function handleReorderDrop(e) {
+    e.preventDefault();
+    const drop = e.target.closest('tr[draggable="true"]');
+    if (!drop || !draggedItem) return;
+    drop.classList.remove('drop-indicator-top','drop-indicator-bottom');
+    draggedItem.classList.remove('is-reordering');
+    let from = parseInt(draggedItem.dataset.index), to = parseInt(drop.dataset.index);
+    if (e.clientY > drop.getBoundingClientRect().top + drop.getBoundingClientRect().height/2) to++;
+    if (from < to) to--;
+    const [moved] = state.tasks.splice(from, 1);
+    state.tasks.splice(to, 0, moved);
+    draggedItem = null;
+    saveState();
+}
+
+// ════════════════════════════════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════════════════════════════════
+async function exportChartAsPng() {
+    showInfoModal('Exporting PNG','Please wait…');
+    try {
+        const el = ganttContainerEl;
+        const { origHeader, origBars, origLabels, hTh } = prepareForExport(el);
+        const canvas = await html2canvas(el, { scale:2, useCORS:true, width:el.scrollWidth, height:el.scrollHeight, windowWidth:el.scrollWidth, windowHeight:el.scrollHeight, backgroundColor:'#ffffff' });
+        restoreAfterExport(el, { origHeader, origBars, origLabels, hTh });
+
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `${session.customerName||'hibob'}-implementation-timeline.png`;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        hideConfirmationModal(); showInfoModal('Export Complete','PNG downloaded successfully.');
+    } catch(err) { console.error(err); hideConfirmationModal(); showInfoModal('Export Failed','Could not export as PNG.'); }
+}
+
+async function exportChartAsPdf() {
+    showInfoModal('Exporting PDF','Please wait…');
+    try {
+        const el = ganttContainerEl;
+        const { origHeader, origBars, origLabels, hTh } = prepareForExport(el);
+        const canvas = await html2canvas(el, { scale:2, useCORS:true, width:el.scrollWidth, height:el.scrollHeight, windowWidth:el.scrollWidth, windowHeight:el.scrollHeight, backgroundColor:'#ffffff' });
+        restoreAfterExport(el, { origHeader, origBars, origLabels, hTh });
+
+        const w = el.scrollWidth, h = el.scrollHeight;
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: w > h ? 'landscape' : 'portrait', unit:'px', format:[w,h] });
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, w, h);
+        pdf.save(`${session.customerName||'hibob'}-implementation-timeline.pdf`);
+        hideConfirmationModal(); showInfoModal('Export Complete','PDF downloaded successfully.');
+    } catch(err) { console.error(err); hideConfirmationModal(); showInfoModal('Export Failed','Could not export as PDF.'); }
+}
+
+function prepareForExport(el) {
+    const hTh = el.querySelector('thead th');
+    const origHeader = hTh ? hTh.style.cssText : '';
+    if (hTh) { hTh.style.position = 'static'; }
+    const bars = el.querySelectorAll('.gantt-bar');
+    const origBars = Array.from(bars).map(b => { const s = b.style.cssText; b.style.transform='none'; b.style.justifyContent='flex-start'; return s; });
+    const labels = el.querySelectorAll('.gantt-bar-label');
+    const origLabels = Array.from(labels).map(l => { const s = l.style.cssText; l.style.visibility='visible'; l.style.transform='scale(1)'; return s; });
+    return { origHeader, origBars, origLabels, hTh };
+}
+
+function restoreAfterExport(el, { origHeader, origBars, origLabels, hTh }) {
+    if (hTh) hTh.style.cssText = origHeader;
+    el.querySelectorAll('.gantt-bar').forEach((b,i) => b.style.cssText = origBars[i]);
+    el.querySelectorAll('.gantt-bar-label').forEach((l,i) => l.style.cssText = origLabels[i]);
+    el.querySelectorAll('.gantt-bar').forEach(adjustBarText);
+}
+
+// ════════════════════════════════════════════════════════════════
+// TASK DEFINITIONS
+// ════════════════════════════════════════════════════════════════
+function getInitialTasks() {
+    let c = Date.now();
+    const id = () => c++;
+    return [
+        { id:id(), name:'Project Kick-off', start:0, duration:1, color:'bg-green-500', children:[], isExpanded:false },
+        {
+            id:id(), name:'Core HR', start:1, duration:12, color:moduleColors['Core HR'], isExpanded:false,
+            children:[
+                { id:id(), name:'Onboarding Workflow Setup', start:1, duration:2, color:'bg-sky-400' },
+                { id:id(), name:'Custom Fields Configuration', start:2, duration:2, color:'bg-sky-400' },
+                { id:id(), name:'Employee Data Import', start:3, duration:2, color:'bg-sky-400' },
+            ],
+            details:{ title:'Core HR Implementation', sections:[
+                { heading:'Bob 101 (Required)', content:'This stage covers the initial configuration that sets you up for long-term success. It includes standard data fields, common permission groups, time off templates, and more.' },
+                { heading:'Data structure and migration', content:"We will work with you to define your data structure and seamlessly import your data into Bob. This includes planning your data structure to support key business needs with a strategic mindset into your growth plans and focus. Providing hands-on support on data migration, including people and payroll data, we will ensure you have a sound foundation to build on." },
+                { heading:'Permissions and system settings', content:'Should you require customization of user roles and role permissions to support organizational needs, we will work with you to help you define and configure it. This may include site or department-specific settings.' },
+                { heading:'Bob 102 (Based on project goals)', content:'This second stage covers customized configuration workshops to meet your specific organizational needs and get maximum value from Bob.' },
+                { heading:'Time off', content:'Country-specific templates are available in Bob. To meet unique time off needs, we will work through specific use cases to ensure policies are correctly built and assigned to the correct employees. This also includes hands-on support for time off data migration.' },
+                { heading:'Flows and task lists', content:"Flows and task lists are the backbone of manager and employee self-service. We will consult on and co-build organizational flows and task lists that support your operations needs. This may include employee onboarding, offboarding, self-service and data update processes." },
+                { heading:'Analytics and dashboards', content:'While Bob has many preconfigured dashboards and reports, we will consult on custom report configuration and report scheduling to meet the analytic needs of your business.' },
+                { heading:'Docs', content:"This workshop focuses on document management, including utilizing Bob's eSign functionality." },
+                { heading:'Job Catalog', content:"This workshop covers attribute settings, field review, values creation, and mass import of your current job catalog. It does NOT cover recommendation or creation of a job catalog for your company." }
+            ]}
+        },
+        {
+            id:id(), name:'Workforce Planning', start:2, duration:8, color:moduleColors['Workforce Planning'], children:[], isExpanded:false,
+            details:{ title:'Workforce Planning Workshops', sections:[
+                { heading:'People Data', content:"Review of your current People data to support optimization for HiBob's Workforce Planning Modules." },
+                { heading:'Job Catalog', content:"Support in the creation of Bob's job catalog, assigning attributes to each job, and importing your job catalog." },
+                { heading:'Positions', content:"Manage positions in Bob, aligning them to the job catalog and linking them to your current employee structure, including To Be Hired (TBH) positions." },
+                { heading:'Automation', content:"Integrate Bob's WFP elements with Core HR processes like new hire flows, and support setup of Greenhouse ATS integration." },
+                { heading:'Planning Events', content:"Workshop for setting up your first workforce planning event in Bob, including scope, planners, and permissions." },
+                { heading:'Analytics', content:"Track & measure your KPIs, review planned positions, and compare them with your recruitment pipeline." }
+            ]}
+        },
+        {
+            id:id(), name:'Compensation', start:3, duration:6, color:moduleColors['Compensation'], isExpanded:false,
+            children:[
+                { id:id(), name:'Compensation Benchmarking', start:3, duration:2, color:'bg-amber-400' },
+                { id:id(), name:'Salary Structure Setup', start:5, duration:2, color:'bg-amber-400' },
+                { id:id(), name:'Bonus Plan Configuration', start:6, duration:2, color:'bg-amber-400' },
+            ],
+            details:{ title:'Compensation Workshops', sections:[
+                { heading:'Data Import', content:'Ensuring that your people and payroll data supports your strategy within compensation and the relevant metrics are available to make data based decisions.' },
+                { heading:'Event Enablement', content:'Workshops focused on setting up your compensation event, including components, participants vs eligibility, budgets, and benchmarking.' },
+                { heading:'Compensation Bands', content:'Also known as salary bands, this allows you to set the minimum, mid, and maximum amount a company will pay someone.' },
+                { heading:'Worksheet Management', content:"Utilizing Hibob's compensation management for both admin and manager views to support end-user enablement and usability, including running and closing an event." }
+            ]}
+        },
+        {
+            id:id(), name:'Time & Attendance', start:4, duration:4, color:moduleColors['Time & Attendance'], children:[], isExpanded:false,
+            details:{ title:'Time & Attendance Workshops', sections:[
+                { heading:'People Data & Discovery', content:"Review of your current People data and setup of Time & Attendance reporting requirements." },
+                { heading:'Time & Attendance Cycles', content:"Enablement and solutionizing on set up of T&A cycles, including required approval flow processes." },
+                { heading:'Project Tracking', content:"Use Project tracking to create projects and tasks and assign employees to gain insights into where resource time is being used." },
+                { heading:'Clock Integration (Optional)', content:"Set up and open a Clock Integration within HiBob." }
+            ]}
+        },
+        {
+            id:id(), name:'Talent', start:5, duration:4, color:moduleColors['Talent'], children:[], isExpanded:false,
+            details:{ title:'Talent Workshops', sections:[
+                { heading:'Performance Reviews', content:'Create & develop a seamless way to deliver qualitative performance reviews, including self, manager, peer, and upward feedback.' },
+                { heading:'Goals', content:'Inspire productivity by setting goals to keep everyone on track and aligned, empowering managers to motivate and drive outcomes.' },
+                { heading:'1on1s', content:'Support a dialogue between employees and managers with regular 1-on-1 check-ins to create a culture of ongoing feedback.' },
+                { heading:'Surveys', content:'Empower leaders to make informed decisions by using company surveys to understand sentiment and guide action plans.' },
+                { heading:'Talent Groups', content:'Helps admins and managers support culture initiatives by nominating and identifying employees based on their interactions.' }
+            ]}
+        },
+        {
+            id:id(), name:'Hiring', start:6, duration:6, color:moduleColors['Hiring'], children:[], isExpanded:false,
+            details:{ title:'Hiring Workshops', sections:[
+                { heading:'Data Import', content:"Hands-on support with data import process for job openings and candidate details." },
+                { heading:'Hiring Settings', content:"Overview and configuration of settings, permissions, hiring roles, fields (offer, candidate, job), approval flows, and templates." },
+                { heading:'Job Openings & Candidate Management', content:"Enablement on Job opening structure, process, and candidate flow in the hiring pipeline." },
+                { heading:'Integrations & Job Marketing', content:"Guidance and support on Job Marketing and Integrations, with step-by-step setup guides for career pages, calendars, job boards, and emails." },
+                { heading:'Hiring Analytics', content:"Uncover key analysis of your hiring process to support visibility of your Hiring KPIs with tailored reports." }
+            ]}
+        },
+        {
+            id:id(), name:'Learning', start:7, duration:6, color:moduleColors['Learning'], children:[], isExpanded:false,
+            details:{ title:'Learning Workshops', sections:[
+                { heading:'Learning Fundamentals', content:"Set up permissions across your organization, allowing key stakeholders visibility to HiBob learning and outcomes." },
+                { heading:'Training Catalog', content:"Set up learning courses (via integration partners or manually) to align with your business options. Grant provider access and set up categories, tags, and filters." },
+                { heading:'Course Assignment & Progression', content:"Assign courses from your training catalog to your employees and empower your managers to monitor their learning journey." }
+            ]}
+        },
+        {
+            id:id(), name:'UK Payroll', start:8, duration:4, color:moduleColors['UK Payroll'], children:[], isExpanded:false,
+            details:{ title:'UK Payroll Implementation', sections:[
+                { heading:'Discovery', content:"Review and understand your payroll cycles, reporting requirements and current employee data to support UK Payroll implementation." },
+                { heading:'Payroll Hub Integration', content:"Workshop and build your first HiBob payroll hub report configuration, including field mapping, data upload, and cycle setup." },
+                { heading:'Validation', content:"Review and run payroll in parallel with Bob to validate data flows between Bob and your payroll solution." }
+            ]}
+        },
+        {
+            id:id(), name:'Sandbox', start:9, duration:2, color:moduleColors['Sandbox'], children:[], isExpanded:false,
+            details:{ title:'Sandbox Environment', sections:[
+                { heading:'Sandbox Setup', content:"Configure a sandbox environment for safe testing and training before go-live. Allows your team to explore HiBob features without affecting production data." },
+                { heading:'User Training', content:"Use the sandbox to run training sessions for admins and managers to get comfortable with HiBob's interface and workflows." }
+            ]}
+        },
+        {
+            id:id(), name:'Payroll Hub', start:8, duration:4, color:moduleColors['Payroll Hub'], children:[], isExpanded:false,
+            details:{ title:'Payroll Hub Workshops', sections:[
+                { heading:'Discovery', content:"Review and understand your payroll cycles, reporting requirements and current employee data to support Payroll Hub Implementation." },
+                { heading:'Payroll Hub Integration', content:"Workshop and build your first HiBob payroll hub report configuration, including field mapping, data upload, and cycle setup." },
+                { heading:'Validation', content:"Review and run payroll in parallel with Bob to validate data flows between Bob and your payroll solution." }
+            ]}
         }
-        
-        function renderGanttChart() {
-            ganttContainerEl.innerHTML = ''; 
-
-            const table = document.createElement('table');
-            // FIX: Add 'table-fixed' for predictable column widths
-            table.className = 'w-full border-collapse table-fixed';
-
-            const thead = document.createElement('thead');
-            const headerRow = document.createElement('tr');
-            headerRow.innerHTML = `<th class="sticky left-0 bg-white w-56 p-3 text-left font-semibold border-b border-r z-20">Task</th>`;
-            for (let i = 1; i <= state.totalWeeks; i++) {
-                headerRow.innerHTML += `<th class="p-3 text-slate-500 font-medium border-b border-l text-sm">W${i}</th>`;
-            }
-            thead.appendChild(headerRow);
-            table.appendChild(thead);
-
-            const tbody = document.createElement('tbody');
-            (state.tasks || []).forEach((task, index) => {
-                renderTaskRowRecursive(task, 0, tbody, index);
-            });
-            table.appendChild(tbody);
-            ganttContainerEl.appendChild(table);
-            
-            setupGanttEventListeners();
-            
-            requestAnimationFrame(() => {
-                 ganttContainerEl.querySelectorAll('.gantt-bar').forEach(adjustBarText);
-            });
-        }
-        function renderTaskRowRecursive(task, level, tbody, index) {
-            const tr = document.createElement('tr');
-            tr.dataset.taskId = task.id;
-            if (task.details) {
-                tr.classList.add('cursor-pointer', 'hover:bg-slate-50');
-            }
-            
-            const isParent = task.children && task.children.length > 0;
-
-            if (level === 0) {
-                tr.dataset.index = index;
-                tr.draggable = true;
-            }
-
-            const nameCell = document.createElement('td');
-            nameCell.className = 'sticky left-0 bg-white p-3 border-b border-r';
-            nameCell.style.paddingLeft = `${0.75 + level * 1.5}rem`;
-            
-            const nameContainer = document.createElement('div');
-            nameContainer.className = 'task-name-container';
-            
-            if (level === 0) nameContainer.innerHTML += `<span class="reorder-handle">⠿</span>`;
-            else nameContainer.innerHTML += `<span class="w-4 inline-block"></span>`;
-            
-            if (isParent) {
-                const iconClass = task.isExpanded ? 'toggle-expand is-expanded' : 'toggle-expand';
-                const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${iconClass}"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
-                nameContainer.innerHTML += icon;
-            } else if (level > 0) {
-                 nameContainer.innerHTML += `<span class="w-4 inline-block ml-2"></span>`;
-            }
-
-            nameContainer.innerHTML += `<span class="font-medium">${task.name}</span>`;
-            nameCell.appendChild(nameContainer);
-            tr.appendChild(nameCell);
-
-            const ganttCell = document.createElement('td');
-            ganttCell.colSpan = state.totalWeeks;
-            ganttCell.className = 'relative p-0 border-b';
-            ganttCell.style.height = '60px';
-
-            // FIX: Start loop at 1 to prevent drawing a redundant grid line at the start
-            for (let i = 1; i < state.totalWeeks; i++) {
-                const gridLine = document.createElement('div');
-                gridLine.className = 'absolute top-0 bottom-0 border-l';
-                gridLine.style.left = `calc(${i / state.totalWeeks} * 100%)`;
-                ganttCell.appendChild(gridLine);
-            }
-
-            const bar = createGanttBar(task);
-            ganttCell.appendChild(bar);
-
-            const taskMilestones = (state.milestones || []).filter(ms => ms.taskId == task.id);
-            taskMilestones.forEach(ms => {
-                const star = document.createElement('div');
-                star.className = 'milestone-symbol';
-                star.dataset.milestoneId = ms.id;
-                star.style.left = `calc(${(ms.week - 0.5) / state.totalWeeks} * 100%)`;
-                star.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="#a16207" stroke-width="1"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path></svg>
-                    <span class="milestone-tooltip">${ms.label}</span>
-                `;
-                ganttCell.appendChild(star);
-            });
-
-            tr.appendChild(ganttCell);
-            tbody.appendChild(tr);
-
-            if (isParent && task.isExpanded) {
-                task.children.forEach(childTask => {
-                    renderTaskRowRecursive(childTask, level + 1, tbody);
-                });
-            }
-        }
-
-        function createGanttBar(task) {
-            const bar = document.createElement('div');
-            bar.className = `gantt-bar text-white ${task.color} transition-all duration-150`;
-            bar.style.left = `calc(${task.start / state.totalWeeks} * 100%)`;
-            bar.style.width = `calc(${task.duration / state.totalWeeks} * 100%)`;
-            bar.dataset.taskId = task.id;
-            
-            const barLabel = document.createElement('span');
-            barLabel.className = 'gantt-bar-label';
-            barLabel.textContent = task.name;
-            bar.appendChild(barLabel);
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-task-btn';
-            deleteBtn.innerHTML = `&times;`;
-            deleteBtn.dataset.taskId = task.id;
-            bar.appendChild(deleteBtn);
-
-            const leftHandle = document.createElement('div');
-            leftHandle.className = 'resize-handle resize-handle-left';
-            bar.appendChild(leftHandle);
-            
-            const rightHandle = document.createElement('div');
-            rightHandle.className = 'resize-handle resize-handle-right';
-            bar.appendChild(rightHandle);
-
-            return bar;
-        }
-
-        function adjustBarText(bar) {
-            const barLabel = bar.querySelector('.gantt-bar-label');
-            if (!barLabel) return;
-            const MIN_SCALE = 0.5;
-            const PADDING = 45;
-            barLabel.style.transform = 'scale(1)';
-            const textWidth = barLabel.scrollWidth;
-            const availableWidth = bar.clientWidth - PADDING;
-            if (textWidth <= availableWidth) {
-                barLabel.style.visibility = 'visible';
-                barLabel.style.transform = 'scale(1)';
-                return;
-            }
-            const scale = availableWidth / textWidth;
-            if (scale < MIN_SCALE) {
-                barLabel.style.visibility = 'hidden';
-            } else {
-                barLabel.style.visibility = 'visible';
-                barLabel.style.transform = `scale(${scale})`;
-            }
-        }
-        
-        // --- EVENT LISTENERS & UTILS --- (No changes needed in this section)
-        function findTaskById(tasks, taskId) {
-            for (const task of tasks) {
-                if (task.id == taskId) return task;
-                if (task.children) {
-                    const found = findTaskById(task.children, taskId);
-                    if (found) return found;
-                }
-            }
-            return null;
-        }
-
-        function openDetailPanel(task) {
-            if (!task.details) return; 
-
-            detailPanelTitle.textContent = task.details.title;
-            detailPanelContent.innerHTML = ''; 
-
-            task.details.sections.forEach(section => {
-                const sectionEl = document.createElement('div');
-                sectionEl.innerHTML = `
-                    <h3 class="text-lg font-semibold mb-2">${section.heading}</h3>
-                    <p class="text-slate-600">${section.content}</p>
-                `;
-                detailPanelContent.appendChild(sectionEl);
-            });
-
-            detailPanel.classList.add('is-open');
-            detailPanelOverlay.classList.add('is-open');
-        }
-
-        function closeDetailPanel() {
-            detailPanel.classList.remove('is-open');
-            detailPanelOverlay.classList.remove('is-open');
-        }
-
-
-        function setupEventListeners() {
-            document.getElementById('update-timeline-btn').addEventListener('click', handleUpdateTimeline);
-            document.getElementById('add-btn').addEventListener('click', handleAddModules);
-            
-            document.getElementById('add-milestone-btn').addEventListener('click', () => handleOpenMilestoneModal());
-            document.getElementById('cancel-milestone-btn').addEventListener('click', handleCloseMilestoneModal);
-            document.getElementById('save-milestone-btn').addEventListener('click', handleSaveMilestone);
-            document.getElementById('delete-milestone-btn').addEventListener('click', handleDeleteMilestone);
-            
-            detailPanelClose.addEventListener('click', closeDetailPanel);
-            detailPanelOverlay.addEventListener('click', closeDetailPanel);
-
-            exportPngBtn.addEventListener('click', exportChartAsPng);
-            exportPdfBtn.addEventListener('click', exportChartAsPdf);
-            
-            ganttContainerEl.addEventListener('click', (e) => {
-                const milestoneSymbol = e.target.closest('.milestone-symbol');
-                if (milestoneSymbol) {
-                    handleOpenMilestoneModal(milestoneSymbol.dataset.milestoneId);
-                    return;
-                }
-
-                const toggleBtn = e.target.closest('.toggle-expand');
-                if (toggleBtn) {
-                    const taskId = toggleBtn.closest('tr').dataset.taskId;
-                    handleToggleExpand(taskId);
-                    return; 
-                }
-
-                const taskRow = e.target.closest('tr[data-task-id]');
-                if(taskRow){
-                    const taskId = taskRow.dataset.taskId;
-                    const task = findTaskById(state.tasks, taskId);
-                    if (task && task.details) {
-                        openDetailPanel(task);
-                    }
-                }
-            });
-        }
-
-        function setupGanttEventListeners() {
-            ganttContainerEl.querySelectorAll('.gantt-bar').forEach(bar => bar.addEventListener('mousedown', handleDragStart));
-            ganttContainerEl.querySelectorAll('.delete-task-btn').forEach(btn => btn.addEventListener('click', handleDeleteTask));
-            ganttContainerEl.querySelectorAll('tr[draggable="true"]').forEach(tr => {
-                tr.addEventListener('dragstart', handleReorderStart);
-                tr.addEventListener('dragover', handleReorderOver);
-                tr.addEventListener('dragleave', handleReorderLeave);
-                tr.addEventListener('drop', handleReorderDrop);
-            });
-        }
-        
-        // --- MODAL HANDLERS --- (No changes needed in this section)
-        function showConfirmationModal(title, message, onConfirm) {
-            const modal = document.getElementById('confirmation-modal');
-            modal.querySelector('#confirmation-title').textContent = title;
-            modal.querySelector('#confirmation-message').textContent = message;
-            const buttonsContainer = modal.querySelector('#confirmation-buttons');
-            buttonsContainer.innerHTML = `
-                <button id="confirm-cancel" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-5 rounded-lg transition-colors">Cancel</button>
-                <button id="confirm-ok" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-5 rounded-lg transition-colors">Confirm</button>
-            `;
-            modal.classList.remove('hidden');
-
-            document.getElementById('confirm-ok').onclick = () => {
-                onConfirm();
-                hideConfirmationModal();
-            };
-            document.getElementById('confirm-cancel').onclick = hideConfirmationModal;
-        }
-
-        function showInfoModal(title, message) {
-            const modal = document.getElementById('confirmation-modal');
-            modal.querySelector('#confirmation-title').textContent = title;
-            modal.querySelector('#confirmation-message').textContent = message;
-            const buttonsContainer = modal.querySelector('#confirmation-buttons');
-            buttonsContainer.innerHTML = `<button id="info-ok" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors">OK</button>`;
-            modal.classList.remove('hidden');
-            document.getElementById('info-ok').onclick = hideConfirmationModal;
-        }
-
-        function hideConfirmationModal() {
-            document.getElementById('confirmation-modal').classList.add('hidden');
-        }
-
-        // --- MAIN HANDLER FUNCTIONS --- (No changes needed in this section)
-        function handleToggleExpand(taskId) {
-            const task = findTaskById(state.tasks, taskId);
-            if (task && task.children) {
-                task.isExpanded = !task.isExpanded;
-                saveState();
-            }
-        }
-
-        function handleUpdateTimeline() {
-            const newWeeks = parseInt(weeksInputEl.value);
-            if (isNaN(newWeeks) || newWeeks < 4 || newWeeks > 52) {
-                showInfoModal('Invalid Input', 'Please enter a number of weeks between 4 and 52.');
-                weeksInputEl.value = state.totalWeeks;
-                return;
-            }
-            state.totalWeeks = newWeeks;
-            const updateAndConstrain = (tasks) => {
-                (tasks || []).forEach(t => {
-                    if (t.start >= state.totalWeeks) {
-                        t.start = state.totalWeeks - 1;
-                        t.duration = 1;
-                    } else if (t.start + t.duration > state.totalWeeks) {
-                        t.duration = state.totalWeeks - t.start;
-                    }
-                    if (t.children) updateAndConstrain(t.children);
-                });
-            };
-            updateAndConstrain(state.tasks);
-            saveState();
-        }
-        function handleAddModules() {
-            const selected = moduleListEl.querySelectorAll('input:checked');
-            if (selected.length === 0) return;
-            
-            const allDefinedTasks = getInitialTasks();
-
-            selected.forEach(cb => {
-                const name = cb.value;
-                const taskExists = state.tasks.some(task => task.name === name);
-
-                if (!taskExists) {
-                    const taskTemplate = allDefinedTasks.find(t => t.name === name);
-                    if (taskTemplate) {
-                         const newTask = JSON.parse(JSON.stringify(taskTemplate)); 
-                         newTask.id = Date.now() + Math.random(); 
-                         if(!state.tasks) state.tasks = [];
-                         state.tasks.push(newTask);
-                    }
-                }
-                
-                cb.checked = false;
-                cb.parentElement.querySelector('span').classList.remove('bg-blue-100', 'text-blue-700');
-            });
-            
-            saveState();
-        }
-
-        function handleOpenMilestoneModal(milestoneId = null) {
-            const modal = document.getElementById('milestone-modal');
-            const title = document.getElementById('modal-title');
-            const idInput = document.getElementById('milestone-id');
-            const labelInput = document.getElementById('milestone-label-input');
-            const weekInput = document.getElementById('milestone-week-input');
-            const deleteBtn = document.getElementById('delete-milestone-btn');
-
-            if (milestoneId) {
-                const milestone = (state.milestones || []).find(m => m.id == milestoneId);
-                if(milestone) {
-                    title.textContent = 'Edit Milestone';
-                    idInput.value = milestone.id;
-                    labelInput.value = milestone.label;
-                    weekInput.value = milestone.week;
-                    deleteBtn.classList.remove('hidden');
-                }
-            } else {
-                title.textContent = 'Add Milestone';
-                idInput.value = '';
-                labelInput.value = '';
-                weekInput.value = '';
-                deleteBtn.classList.add('hidden');
-            }
-            weekInput.max = state.totalWeeks;
-            modal.classList.remove('hidden');
-        }
-
-        function handleCloseMilestoneModal() {
-            document.getElementById('milestone-modal').classList.add('hidden');
-        }
-
-        function handleSaveMilestone() {
-            const id = document.getElementById('milestone-id').value;
-            const label = document.getElementById('milestone-label-input').value.trim();
-            const week = parseInt(document.getElementById('milestone-week-input').value);
-
-            if (!label || isNaN(week) || week < 1 || week > state.totalWeeks) {
-                showInfoModal('Invalid Input', `Please provide a valid label and week number (1-${state.totalWeeks}).`);
-                return;
-            }
-
-            if (!state.milestones) state.milestones = [];
-            
-            if (id) {
-                const index = state.milestones.findIndex(m => m.id == id);
-                if(index > -1) state.milestones[index] = { ...state.milestones[index], label, week };
-            } else {
-                state.milestones.push({ id: Date.now(), label, week, taskId: null });
-            }
-            saveState();
-            handleCloseMilestoneModal();
-        }
-
-        function handleDeleteMilestone() {
-            const id = document.getElementById('milestone-id').value;
-            if(!id) return;
-            showConfirmationModal('Delete Milestone?', 'Are you sure? This action cannot be undone.', () => {
-                state.milestones = state.milestones.filter(m => m.id != id);
-                saveState();
-                handleCloseMilestoneModal();
-            });
-        }
-
-        function handleDeleteTask(e) {
-            e.stopPropagation();
-            const taskId = e.currentTarget.dataset.taskId;
-            
-            const deleteTaskRecursive = (tasks, id) => {
-                for (let i = 0; i < tasks.length; i++) {
-                    if (tasks[i].id == id) {
-                        tasks.splice(i, 1);
-                        return true;
-                    }
-                    if (tasks[i].children) {
-                        if (deleteTaskRecursive(tasks[i].children, id)) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            };
-
-            showConfirmationModal('Delete Task?', 'Are you sure? This will delete the task and all its sub-tasks.', () => {
-                if (deleteTaskRecursive(state.tasks, taskId)) {
-                    state.milestones = (state.milestones || []).filter(ms => findTaskById(state.tasks, ms.taskId));
-                    saveState();
-                }
-            });
-        }
-        
-        // --- DRAG, RESIZE, REORDER HANDLERS --- (No changes needed in this section)
-        let dragInfo = {};
-        function handleDragStart(e) {
-            if (e.target.classList.contains('resize-handle')) {
-                handleResizeStart(e);
-                return;
-            }
-            e.preventDefault();
-            const bar = e.currentTarget;
-            const taskId = bar.dataset.taskId;
-            const task = findTaskById(state.tasks, taskId);
-            if (!task) return;
-
-            bar.classList.add('is-dragging');
-            const ganttAreaWidth = ganttContainerEl.querySelector('td[colspan]').offsetWidth;
-            const weekWidth = ganttAreaWidth / state.totalWeeks;
-            
-            dragInfo = { task, bar, weekWidth, startX: e.clientX, initialStart: task.start };
-            document.addEventListener('mousemove', handleDragMove);
-            document.addEventListener('mouseup', handleDragEnd, { once: true });
-        }
-
-        function handleDragMove(e) {
-            if (!dragInfo.task) return;
-            const dx = e.clientX - dragInfo.startX;
-            let newStart = dragInfo.initialStart + Math.round(dx / dragInfo.weekWidth);
-            newStart = Math.max(0, Math.min(state.totalWeeks - dragInfo.task.duration, newStart));
-            dragInfo.bar.style.left = `calc(${newStart / state.totalWeeks} * 100%)`;
-            dragInfo.currentStart = newStart;
-        }
-
-        function handleDragEnd(e) {
-            dragInfo.bar.classList.remove('is-dragging');
-            if (dragInfo.currentStart !== undefined && dragInfo.currentStart !== dragInfo.task.start) {
-                dragInfo.task.start = dragInfo.currentStart;
-                saveState();
-            }
-            dragInfo = {};
-            document.removeEventListener('mousemove', handleDragMove);
-        }
-
-        let resizeInfo = {};
-        function handleResizeStart(e) {
-            e.stopPropagation(); e.preventDefault();
-            const handle = e.target;
-            const bar = handle.closest('.gantt-bar');
-            const taskId = bar.dataset.taskId;
-            const task = findTaskById(state.tasks, taskId);
-            if (!task) return;
-            
-            const ganttAreaWidth = ganttContainerEl.querySelector('td[colspan]').offsetWidth;
-            const weekWidth = ganttAreaWidth / state.totalWeeks;
-            
-            resizeInfo = { task, bar, weekWidth, isLeft: handle.classList.contains('resize-handle-left'), startX: e.clientX, initialStart: task.start, initialDuration: task.duration };
-            document.addEventListener('mousemove', handleResizeMove);
-            document.addEventListener('mouseup', handleResizeEnd, { once: true });
-        }
-
-        function handleResizeMove(e) {
-            if (!resizeInfo.task) return;
-            const dx = e.clientX - resizeInfo.startX;
-            const dWeeks = Math.round(dx / resizeInfo.weekWidth);
-
-            if (resizeInfo.isLeft) {
-                let newStart = resizeInfo.initialStart + dWeeks;
-                let newDuration = resizeInfo.initialDuration - dWeeks;
-                if (newStart < 0 || newDuration < 1) return;
-                resizeInfo.task.start = newStart;
-                resizeInfo.task.duration = newDuration;
-                resizeInfo.bar.style.left = `calc(${newStart / state.totalWeeks} * 100%)`;
-                resizeInfo.bar.style.width = `calc(${newDuration / state.totalWeeks} * 100%)`;
-            } else {
-                let newDuration = resizeInfo.initialDuration + dWeeks;
-                if (newDuration < 1 || resizeInfo.task.start + newDuration > state.totalWeeks) return;
-                resizeInfo.task.duration = newDuration;
-                resizeInfo.bar.style.width = `calc(${newDuration / state.totalWeeks} * 100%)`;
-            }
-            adjustBarText(resizeInfo.bar);
-        }
-
-        function handleResizeEnd() {
-            if (resizeInfo.task) saveState();
-            resizeInfo = {};
-            document.removeEventListener('mousemove', handleResizeMove);
-        }
-
-        let draggedItem = null;
-        function handleReorderStart(e) {
-            draggedItem = e.target;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', e.target.innerHTML);
-            setTimeout(() => e.target.classList.add('is-reordering'), 0);
-        }
-
-        function handleReorderOver(e) {
-            e.preventDefault();
-            const targetRow = e.target.closest('tr[draggable="true"]');
-            if (!targetRow || !draggedItem || targetRow === draggedItem) return;
-            ganttContainerEl.querySelectorAll('tr').forEach(tr => tr.classList.remove('drop-indicator-top', 'drop-indicator-bottom'));
-            const targetRect = targetRow.getBoundingClientRect();
-            if (e.clientY < targetRect.top + targetRect.height / 2) {
-                targetRow.classList.add('drop-indicator-top');
-            } else {
-                targetRow.classList.add('drop-indicator-bottom');
-            }
-        }
-
-        function handleReorderLeave(e) {
-            e.target.closest('tr')?.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
-        }
-
-        function handleReorderDrop(e) {
-            e.preventDefault();
-            const dropTarget = e.target.closest('tr[draggable="true"]');
-            if (!dropTarget || !draggedItem) return;
-            
-            dropTarget.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
-            draggedItem.classList.remove('is-reordering');
-            
-            const fromIndex = parseInt(draggedItem.dataset.index);
-            let toIndex = parseInt(dropTarget.dataset.index);
-            
-            const targetRect = dropTarget.getBoundingClientRect();
-            if (e.clientY > targetRect.top + targetRect.height / 2) toIndex++;
-            if (fromIndex < toIndex) toIndex--;
-
-            const [movedItem] = state.tasks.splice(fromIndex, 1);
-            state.tasks.splice(toIndex, 0, movedItem);
-
-            draggedItem = null;
-            saveState();
-        }
-        
-        // --- EXPORT FUNCTIONS ---
-        async function exportChartAsPng() {
-            showInfoModal('Exporting PNG', 'Please wait while the chart is being prepared...');
-            try {
-                // We'll use the global html2canvas function loaded from the script tag
-                const canvas = await html2canvas(ganttContainerEl, { scale: 2, useCORS: true });
-                const imgData = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.href = imgData;
-                link.download = 'gantt-chart.png';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                hideConfirmationModal();
-            } catch (error) {
-                console.error('Error exporting as PNG:', error);
-                showInfoModal('Export Failed', 'Could not export the chart as a PNG image.');
-            }
-        }
-
-        async function exportChartAsPdf() {
-            showInfoModal('Exporting PDF', 'Please wait while the chart is being prepared...');
-            try {
-                const ganttChartElement = document.getElementById('gantt-chart-container');
-                const scrollWidth = ganttChartElement.scrollWidth;
-                const scrollHeight = ganttChartElement.scrollHeight;
-
-                const canvas = await html2canvas(ganttChartElement, {
-                    scale: 2,
-                    useCORS: true,
-                    width: scrollWidth,
-                    height: scrollHeight,
-                    windowWidth: scrollWidth,
-                    windowHeight: scrollHeight,
-                    backgroundColor: '#ffffff'
-                });
-                const imgData = canvas.toDataURL('image/png');
-
-                // FIX: Use the global jspdf object from the script tag
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: scrollWidth > scrollHeight ? 'landscape' : 'portrait',
-                    unit: 'px',
-                    format: [scrollWidth, scrollHeight]
-                });
-
-                pdf.addImage(imgData, 'PNG', 0, 0, scrollWidth, scrollHeight);
-                pdf.save('gantt-chart.pdf');
-                hideConfirmationModal();
-            } catch (error) {
-                console.error('Error exporting as PDF:', error);
-                showInfoModal('Export Failed', 'Could not export the chart as a PDF.');
-            }
-        }
-    </script>
+    ];
+}
+</script>
 </body>
 </html>

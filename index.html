@@ -5,20 +5,131 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HiBob Implementation Timeline</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --hibob-coral: #FC5542;
             --hibob-navy: #1E1F3B;
             --hibob-coral-light: #FFF0EE;
+            --hibob-coral-mid: #FDE0DC;
         }
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Nunito', sans-serif; -webkit-font-smoothing: antialiased; }
+
+        /* ── Pill buttons ── */
+        .btn-primary {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            background: var(--hibob-coral); color: white; font-weight: 700;
+            padding: 10px 22px; border-radius: 9999px; border: none; cursor: pointer;
+            font-size: 0.875rem; transition: all .18s; font-family: 'Nunito', sans-serif;
+        }
+        .btn-primary:hover { background: #e84432; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(252,85,66,.35); }
+        .btn-secondary {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            background: white; color: var(--hibob-coral); font-weight: 700;
+            padding: 10px 22px; border-radius: 9999px; border: 2px solid var(--hibob-coral); cursor: pointer;
+            font-size: 0.875rem; transition: all .18s; font-family: 'Nunito', sans-serif;
+        }
+        .btn-secondary:hover { background: var(--hibob-coral-light); }
+        .btn-ghost {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            background: transparent; color: rgba(255,255,255,.7); font-weight: 600;
+            padding: 8px 16px; border-radius: 9999px; border: 1.5px solid rgba(255,255,255,.2); cursor: pointer;
+            font-size: 0.8rem; transition: all .18s; font-family: 'Nunito', sans-serif;
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,.1); color: white; border-color: rgba(255,255,255,.4); }
+        .btn-danger {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #ef4444; color: white; font-weight: 700;
+            padding: 10px 22px; border-radius: 9999px; border: none; cursor: pointer;
+            font-size: 0.875rem; transition: all .18s; font-family: 'Nunito', sans-serif;
+        }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-neutral {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #f1f5f9; color: #475569; font-weight: 700;
+            padding: 10px 22px; border-radius: 9999px; border: none; cursor: pointer;
+            font-size: 0.875rem; transition: all .18s; font-family: 'Nunito', sans-serif;
+        }
+        .btn-neutral:hover { background: #e2e8f0; }
+
+        /* ── Session Picker ── */
+        #session-picker-screen {
+            min-height: 100vh; background: var(--hibob-navy);
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            padding: 48px 24px;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(252,85,66,.12) 0%, transparent 60%),
+                              radial-gradient(ellipse at 80% 20%, rgba(252,85,66,.08) 0%, transparent 50%);
+        }
+        .picker-header { text-align: center; margin-bottom: 40px; }
+        .hibob-wordmark-large {
+            font-size: 2.5rem; font-weight: 800; color: white; letter-spacing: -1px; margin-bottom: 12px;
+        }
+        .hibob-wordmark-large span { color: var(--hibob-coral); }
+        .picker-header h1 { color: white; font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+        .picker-header p { color: rgba(255,255,255,.55); font-size: 0.95rem; }
+
+        .picker-search-wrap { width: 100%; max-width: 680px; margin-bottom: 28px; position: relative; }
+        .picker-search-wrap input {
+            width: 100%; padding: 12px 20px 12px 44px; border-radius: 9999px;
+            border: 1.5px solid rgba(255,255,255,.12); background: rgba(255,255,255,.07);
+            color: white; font-size: 0.9rem; font-family: 'Nunito', sans-serif; outline: none;
+            transition: border-color .18s;
+        }
+        .picker-search-wrap input::placeholder { color: rgba(255,255,255,.35); }
+        .picker-search-wrap input:focus { border-color: rgba(252,85,66,.6); background: rgba(255,255,255,.1); }
+        .picker-search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,.4); }
+
+        #session-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; width: 100%; max-width: 900px; }
+
+        .session-card {
+            background: rgba(255,255,255,.06); border: 1.5px solid rgba(255,255,255,.1);
+            border-radius: 20px; padding: 24px; cursor: pointer; position: relative;
+            transition: all .2s; backdrop-filter: blur(8px);
+        }
+        .session-card:hover { background: rgba(255,255,255,.1); border-color: var(--hibob-coral); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+        .session-card-logo { width: 40px; height: 40px; border-radius: 10px; object-fit: contain; background: white; padding: 4px; margin-bottom: 12px; display: block; }
+        .session-card-initials {
+            width: 40px; height: 40px; border-radius: 10px; background: var(--hibob-coral);
+            color: white; font-weight: 800; font-size: 1rem; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;
+        }
+        .session-card-name { color: white; font-weight: 700; font-size: 1rem; margin-bottom: 4px; line-height: 1.3; }
+        .session-card-date { color: rgba(255,255,255,.4); font-size: 0.75rem; }
+        .session-card-delete {
+            position: absolute; top: 12px; right: 12px; width: 28px; height: 28px;
+            border-radius: 50%; border: none; background: rgba(255,255,255,.08); color: rgba(255,255,255,.35);
+            cursor: pointer; opacity: 0; transition: all .15s; display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+        }
+        .session-card:hover .session-card-delete { opacity: 1; }
+        .session-card-delete:hover { background: rgba(239,68,68,.25); color: #fca5a5; }
+
+        .new-timeline-card {
+            background: transparent; border: 2px dashed rgba(252,85,66,.4);
+            border-radius: 20px; padding: 24px; cursor: pointer; position: relative;
+            transition: all .2s; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 140px;
+            color: rgba(252,85,66,.7);
+        }
+        .new-timeline-card:hover { border-color: var(--hibob-coral); color: var(--hibob-coral); background: rgba(252,85,66,.05); }
+        .new-timeline-card .plus-icon { font-size: 2rem; margin-bottom: 6px; line-height: 1; }
+        .new-timeline-card span { font-weight: 700; font-size: 0.9rem; }
+
+        .new-session-inline { display: none; flex-direction: column; gap: 10px; width: 100%; }
+        .new-session-inline.is-open { display: flex; }
+        .new-session-inline input {
+            width: 100%; padding: 10px 16px; border-radius: 9999px;
+            border: 2px solid var(--hibob-coral); background: rgba(255,255,255,.1);
+            color: white; font-size: 0.9rem; font-family: 'Nunito', sans-serif; outline: none;
+        }
+        .new-session-inline input::placeholder { color: rgba(255,255,255,.4); }
+
+        .picker-loading { color: rgba(255,255,255,.5); text-align: center; padding: 40px; font-size: 0.9rem; width: 100%; }
 
         /* ── Gantt bar ── */
         .gantt-bar {
             position: absolute; height: 70%; top: 15%; z-index: 10;
-            border-radius: 0.375rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0/.1), 0 2px 4px -2px rgb(0 0 0/.1);
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
             cursor: move; display: flex; align-items: center;
             justify-content: space-between; padding: 0 0.75rem;
             overflow: hidden; white-space: nowrap;
@@ -47,7 +158,14 @@
         .modal-overlay {
             position: fixed; inset: 0; background-color: rgba(0,0,0,.5);
             display: flex; align-items: center; justify-content: center; z-index: 50;
+            backdrop-filter: blur(4px);
         }
+        .modal-card {
+            background: white; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+            padding: 32px; width: 100%;
+        }
+        .modal-title { font-size: 1.25rem; font-weight: 800; color: var(--hibob-navy); margin-bottom: 6px; }
+        .modal-subtitle { font-size: 0.85rem; color: #94a3b8; margin-bottom: 24px; }
 
         /* ── Expand/collapse ── */
         .toggle-expand {
@@ -64,10 +182,12 @@
             cursor: pointer; filter: drop-shadow(0 1px 2px rgb(0 0 0/.2));
         }
         .milestone-symbol .milestone-tooltip {
-            visibility: hidden; width: max-content; background-color: #1f2937;
-            color: #fff; text-align: center; border-radius: 6px; padding: 5px 10px;
-            position: absolute; z-index: 1; bottom: 125%; left: 50%;
+            visibility: hidden; width: max-content; background: var(--hibob-navy);
+            color: #fff; text-align: center; border-radius: 10px; padding: 6px 12px;
+            font-size: 0.75rem; font-weight: 600;
+            position: absolute; z-index: 1; bottom: 130%; left: 50%;
             transform: translateX(-50%); opacity: 0; transition: opacity .2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,.2);
         }
         .milestone-symbol:hover .milestone-tooltip { visibility: visible; opacity: 1; }
 
@@ -75,6 +195,22 @@
         #detail-panel { border-left: 4px solid var(--hibob-coral); }
         #detail-panel.is-open { transform: translateX(0); }
         #detail-panel-overlay.is-open { opacity: 1; pointer-events: auto; }
+        .detail-section { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; }
+        .detail-section:last-child { border-bottom: none; }
+        .detail-section-heading { font-size: 0.7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--hibob-coral); margin-bottom: 6px; }
+        .detail-section-content { font-size: 0.875rem; color: #475569; line-height: 1.7; }
+
+        /* ── Info icon (ⓘ) on task rows ── */
+        .task-info-btn {
+            display: none; align-items: center; justify-content: center;
+            width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--hibob-coral);
+            color: var(--hibob-coral); background: transparent; cursor: pointer;
+            font-size: 12px; font-weight: 800; flex-shrink: 0; margin-left: auto;
+            transition: all .15s; font-family: 'Nunito', sans-serif;
+            line-height: 1;
+        }
+        tr:hover .task-info-btn { display: flex; }
+        .task-info-btn:hover { background: var(--hibob-coral); color: white; }
 
         /* ── Presentation mode ── */
         .is-presenting .edit-only       { display: none !important; }
@@ -82,6 +218,8 @@
         .is-presenting .resize-handle   { display: none; }
         .is-presenting .reorder-handle  { display: none; }
         .is-presenting .delete-task-btn { display: none !important; }
+        /* Keep info icon visible in presentation mode */
+        .is-presenting tr:hover .task-info-btn { display: flex; }
 
         #present-indicator { display: none; }
         .is-presenting #present-indicator { display: flex; }
@@ -90,62 +228,52 @@
 
         /* ── Module cards ── */
         .module-card {
-            display: flex; align-items: center; gap: 8px; padding: 8px 14px;
-            border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer;
-            transition: all .15s; font-weight: 500; font-size: .875rem; background: white;
+            display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+            border-radius: 9999px; border: 2px solid #e2e8f0; cursor: pointer;
+            transition: all .15s; font-weight: 700; font-size: 0.8rem; background: white;
             user-select: none;
         }
-        .module-card.selected { border-color: var(--hibob-coral); background-color: var(--hibob-coral-light); }
+        .module-card:hover { border-color: #cbd5e1; background: #f8fafc; }
+        .module-card.selected { border-color: var(--hibob-coral); background-color: var(--hibob-coral-light); color: var(--hibob-navy); }
         .module-card-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-        /* ── Session picker ── */
-        .session-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 16px; border-radius: 10px; border: 1px solid #e2e8f0;
-            margin-bottom: 8px; background: white; transition: all .15s;
+        /* ── Toast ── */
+        #toast {
+            position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+            background: var(--hibob-navy); color: white; padding: 12px 22px;
+            border-radius: 9999px; font-size: 0.875rem; font-weight: 700;
+            box-shadow: 0 8px 24px rgba(0,0,0,.25); display: flex; align-items: center; gap: 8px;
+            transform: translateY(80px); opacity: 0; transition: all .3s cubic-bezier(.34,1.56,.64,1);
+            pointer-events: none;
         }
-        .session-item:hover { border-color: var(--hibob-coral); background-color: var(--hibob-coral-light); }
+        #toast.show { transform: translateY(0); opacity: 1; }
+        #toast .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
 
 <!-- ════════════════════════════════════════
-     SESSION PICKER MODAL
+     SESSION PICKER SCREEN
 ════════════════════════════════════════ -->
-<div id="session-picker-modal" class="modal-overlay">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-        <div class="flex items-center gap-3 mb-6">
-            <div class="rounded-xl px-3 py-2" style="background:#1E1F3B">
-                <span class="font-bold text-xl text-white">hi<span style="color:#FC5542">bob</span></span>
-            </div>
-            <div>
-                <h2 class="text-xl font-bold">Customer Timelines</h2>
-                <p class="text-sm text-slate-400">Select or create a timeline</p>
-            </div>
-        </div>
-        <div id="session-list" class="max-h-72 overflow-y-auto mb-4">
-            <p class="text-slate-400 text-sm text-center py-6">Loading…</p>
-        </div>
-        <button id="new-session-btn" class="w-full py-3 rounded-xl font-semibold text-white text-sm transition-colors" style="background:#FC5542">
-            + New Customer Timeline
-        </button>
+<div id="session-picker-screen">
+    <div class="picker-header">
+        <div class="hibob-wordmark-large">hi<span>bob</span></div>
+        <h1>Implementation Timeline</h1>
+        <p>Build and present custom implementation plans for your customers</p>
     </div>
-</div>
 
-<!-- ════════════════════════════════════════
-     NEW SESSION MODAL
-════════════════════════════════════════ -->
-<div id="new-session-modal" class="modal-overlay hidden">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8">
-        <h2 class="text-xl font-bold mb-1">New Customer Timeline</h2>
-        <p class="text-sm text-slate-400 mb-4">Enter the customer's name to create their implementation timeline.</p>
-        <input type="text" id="new-session-name" placeholder="e.g., Acme Corporation"
-               class="w-full border-2 rounded-xl p-3 mb-4 text-sm focus:outline-none"
-               style="border-color:#e2e8f0" onfocus="this.style.borderColor='#FC5542'" onblur="this.style.borderColor='#e2e8f0'">
-        <div class="flex gap-3">
-            <button id="cancel-new-session-btn" class="flex-1 py-2 rounded-xl border font-semibold text-slate-600 text-sm hover:bg-slate-50">Cancel</button>
-            <button id="confirm-new-session-btn" class="flex-1 py-2 rounded-xl font-semibold text-white text-sm" style="background:#FC5542">Create</button>
-        </div>
+    <div class="picker-search-wrap">
+        <svg class="picker-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="picker-search-input" placeholder="Search customers…">
+    </div>
+
+    <div id="session-cards-grid">
+        <div class="picker-loading">Loading your timelines…</div>
     </div>
 </div>
 
@@ -153,13 +281,13 @@
      MODULE DURATION DIALOG
 ════════════════════════════════════════ -->
 <div id="module-duration-modal" class="modal-overlay hidden">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8" style="max-height:90vh;overflow-y:auto">
-        <h2 class="text-xl font-bold mb-1">Customize Module Durations</h2>
-        <p class="text-sm text-slate-400 mb-6">Adjust the default timeline for each module before adding to the chart.</p>
+    <div class="modal-card w-full max-w-md" style="max-height:90vh;overflow-y:auto">
+        <h2 class="modal-title">Customize Module Durations</h2>
+        <p class="modal-subtitle">Adjust the default timeline for each module before adding to the chart.</p>
         <div id="module-duration-list" class="space-y-3 mb-6"></div>
         <div class="flex gap-3">
-            <button id="cancel-duration-btn" class="flex-1 py-2 rounded-xl border font-semibold text-slate-600 text-sm hover:bg-slate-50">Cancel</button>
-            <button id="confirm-duration-btn" class="flex-1 py-2 rounded-xl font-semibold text-white text-sm" style="background:#FC5542">Add to Timeline</button>
+            <button id="cancel-duration-btn" class="btn-neutral flex-1">Cancel</button>
+            <button id="confirm-duration-btn" class="btn-primary flex-1">Add to Timeline</button>
         </div>
     </div>
 </div>
@@ -170,53 +298,53 @@
 <div id="app" class="hidden">
 
     <!-- Header -->
-    <header style="background:#1E1F3B" class="px-6 py-4 sticky top-0 z-20">
+    <header style="background:var(--hibob-navy)" class="px-6 py-4 sticky top-0 z-20">
         <div class="max-w-screen-2xl mx-auto flex items-center justify-between gap-4 flex-wrap">
 
             <!-- Left: HiBob + customer name -->
             <div class="flex items-center gap-4">
-                <span class="font-bold text-2xl text-white">hi<span style="color:#FC5542">bob</span></span>
+                <span class="font-extrabold text-2xl text-white tracking-tight">hi<span style="color:var(--hibob-coral)">bob</span></span>
                 <div class="h-6 w-px bg-white opacity-20"></div>
                 <div>
-                    <p class="text-slate-400 text-xs">Implementation Timeline</p>
-                    <p id="header-customer-name" class="text-white font-semibold text-sm leading-tight"></p>
+                    <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Implementation Timeline</p>
+                    <p id="header-customer-name" class="text-white font-bold text-sm leading-tight"></p>
                 </div>
             </div>
 
             <!-- Centre: presenting pill -->
-            <div id="present-indicator" class="items-center gap-2 text-white text-xs font-semibold px-3 py-1 rounded-full" style="background:#FC5542">
+            <div id="present-indicator" class="items-center gap-2 text-white text-xs font-bold px-4 py-1.5 rounded-full" style="background:var(--hibob-coral)">
                 ● PRESENTING
             </div>
 
             <!-- Export buttons (presentation mode only) -->
             <div id="header-export-buttons" class="items-center gap-2">
-                <button id="header-export-png-btn" class="text-white border border-white border-opacity-30 text-sm font-medium px-4 py-2 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors">Export PNG</button>
-                <button id="header-export-pdf-btn" class="text-white border border-white border-opacity-30 text-sm font-medium px-4 py-2 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors">Export PDF</button>
+                <button id="header-export-png-btn" class="btn-ghost">Export PNG</button>
+                <button id="header-export-pdf-btn" class="btn-ghost">Export PDF</button>
             </div>
 
             <!-- Right: logo + controls -->
             <div class="flex items-center gap-3">
                 <!-- Customer logo (always shown when present) -->
-                <div id="customer-logo-container" class="hidden items-center">
-                    <img id="customer-logo-img" src="" alt="Customer logo" class="h-10 max-w-[8rem] object-contain rounded">
+                <div id="customer-logo-container" class="hidden items-center bg-white rounded-xl px-3 py-1.5">
+                    <img id="customer-logo-img" src="" alt="Customer logo" class="h-8 max-w-[7rem] object-contain">
                 </div>
 
                 <!-- Upload button (edit mode only) -->
-                <label id="logo-upload-btn" class="edit-only cursor-pointer text-slate-300 hover:text-white text-xs border border-white border-opacity-20 rounded-lg px-3 py-2 transition-colors">
+                <label id="logo-upload-btn" class="edit-only cursor-pointer btn-ghost">
                     <span id="logo-upload-label">Upload Logo</span>
                     <input type="file" id="customer-logo-input" accept="image/*" class="hidden">
                 </label>
 
                 <!-- Present / Edit toggle -->
-                <button id="present-toggle-btn" class="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg text-white transition-colors" style="background:#FC5542">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.361a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+                <button id="present-toggle-btn" class="btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.361a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
                     <span id="present-toggle-label">Present</span>
                 </button>
 
                 <!-- Save + Switch (edit only) -->
                 <div class="flex items-center gap-1 edit-only">
-                    <button id="save-btn" class="text-xs font-medium text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors">Save ✓</button>
-                    <button id="switch-customer-btn" class="text-xs font-medium text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors">Switch Customer</button>
+                    <button id="save-btn" class="btn-ghost">Save</button>
+                    <button id="switch-customer-btn" class="btn-ghost">Switch Customer</button>
                 </div>
             </div>
         </div>
@@ -225,52 +353,53 @@
     <div class="max-w-screen-2xl mx-auto p-4 md:p-6">
 
         <!-- Controls row (edit only) -->
-        <div class="edit-only grid lg:grid-cols-3 gap-6 mb-6">
+        <div class="edit-only grid lg:grid-cols-3 gap-5 mb-6">
 
             <!-- Module selection -->
-            <div class="bg-white p-6 rounded-xl shadow-sm lg:col-span-2">
-                <h2 class="font-semibold text-base mb-1">Available Modules</h2>
-                <p class="text-xs text-slate-400 mb-4">Click modules to select, then click "Add Selected Modules"</p>
+            <div class="bg-white p-6 rounded-2xl shadow-sm lg:col-span-2" style="border: 1px solid #f1f5f9">
+                <h2 class="font-extrabold text-base text-slate-800 mb-1">Available Modules</h2>
+                <p class="text-xs text-slate-400 font-semibold mb-4">Select modules then click "Add to Timeline"</p>
                 <div id="module-list" class="flex flex-wrap gap-2 mb-4 min-h-[2.5rem]"></div>
-                <button id="add-btn" class="font-semibold py-2 px-5 rounded-lg text-white text-sm transition-colors" style="background:#FC5542">Add Selected Modules</button>
+                <button id="add-btn" class="btn-primary">Add to Timeline</button>
             </div>
 
             <!-- Settings -->
-            <div class="bg-white p-6 rounded-xl shadow-sm">
-                <h2 class="font-semibold text-base mb-4">Settings</h2>
-                <div class="mb-4">
-                    <p class="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Timeline Duration</p>
+            <div class="bg-white p-6 rounded-2xl shadow-sm" style="border: 1px solid #f1f5f9">
+                <h2 class="font-extrabold text-base text-slate-800 mb-4">Settings</h2>
+                <div class="mb-5">
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Timeline Duration</p>
                     <div class="flex items-center gap-2">
-                        <input type="number" id="total-weeks-input" class="border rounded-lg w-16 p-2 text-sm text-center" value="12" min="4" max="52">
-                        <span class="text-sm text-slate-400">weeks</span>
-                        <button id="update-timeline-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 px-3 rounded-lg text-sm transition-colors">Set</button>
+                        <input type="number" id="total-weeks-input" class="border-2 rounded-full w-16 p-2 text-sm text-center font-bold focus:outline-none" style="border-color:#e2e8f0" onfocus="this.style.borderColor='#FC5542'" onblur="this.style.borderColor='#e2e8f0'" value="12" min="4" max="52">
+                        <span class="text-sm text-slate-400 font-semibold">weeks</span>
+                        <button id="update-timeline-btn" class="btn-secondary" style="padding:8px 16px;font-size:0.8rem">Set</button>
                     </div>
                 </div>
-                <div class="border-t pt-4 mb-4">
-                    <p class="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Milestones</p>
-                    <button id="add-milestone-btn" class="text-sm font-medium text-white py-2 px-4 rounded-lg transition-colors" style="background:#FC5542">+ Add Milestone</button>
+                <div class="border-t pt-4 mb-5">
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Milestones</p>
+                    <button id="add-milestone-btn" class="btn-primary" style="padding:8px 18px;font-size:0.8rem">+ Add Milestone</button>
                 </div>
                 <div class="border-t pt-4">
-                    <p class="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Export</p>
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Export</p>
                     <div class="flex flex-wrap gap-2">
-                        <button id="export-png-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">PNG</button>
-                        <button id="export-pdf-btn" class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">PDF</button>
+                        <button id="export-png-btn" class="btn-secondary" style="padding:8px 18px;font-size:0.8rem">PNG</button>
+                        <button id="export-pdf-btn" class="btn-secondary" style="padding:8px 18px;font-size:0.8rem">PDF</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Gantt chart -->
-        <div class="bg-white rounded-xl shadow-sm overflow-x-auto relative">
+        <div class="bg-white rounded-2xl shadow-sm overflow-x-auto relative" style="border: 1px solid #f1f5f9">
             <!-- Empty state -->
             <div id="empty-state" class="hidden flex-col items-center justify-center py-24 px-8 text-center">
-                <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4" style="background:#FFF0EE">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#FC5542" stroke-width="1.5">
+                <div class="w-20 h-20 rounded-full flex items-center justify-center mb-5" style="background:var(--hibob-coral-light)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="var(--hibob-coral)" stroke-width="1.5">
                         <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                        <line x1="8" y1="14" x2="16" y2="14" stroke-linecap="round"/><line x1="8" y1="18" x2="13" y2="18" stroke-linecap="round"/>
                     </svg>
                 </div>
-                <h3 class="text-lg font-semibold text-slate-700 mb-2">No modules added yet</h3>
-                <p class="text-sm text-slate-400 max-w-xs">Select modules above and click "Add Selected Modules" to build the implementation timeline.</p>
+                <h3 class="text-lg font-extrabold text-slate-700 mb-2">No modules added yet</h3>
+                <p class="text-sm text-slate-400 font-semibold max-w-xs">Select modules above and click "Add to Timeline" to build your implementation plan.</p>
             </div>
             <div id="gantt-chart-container" class="p-4 min-w-[800px] relative hidden"></div>
         </div>
@@ -281,21 +410,21 @@
      MILESTONE MODAL
 ════════════════════════════════════════ -->
 <div id="milestone-modal" class="modal-overlay hidden">
-    <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm">
-        <h3 id="modal-title" class="text-xl font-bold mb-4">Add Milestone</h3>
+    <div class="modal-card w-full max-w-sm">
+        <h3 id="modal-title" class="modal-title">Add Milestone</h3>
         <input type="hidden" id="milestone-id">
         <div class="mb-4">
-            <label class="block mb-2 font-medium text-sm">Label</label>
-            <input type="text" id="milestone-label-input" class="w-full border rounded-lg p-2 text-sm" placeholder="e.g., Phase 1 Complete">
+            <label class="block mb-2 font-bold text-sm text-slate-600">Label</label>
+            <input type="text" id="milestone-label-input" class="w-full border-2 rounded-full p-2.5 px-4 text-sm font-semibold focus:outline-none" style="border-color:#e2e8f0" onfocus="this.style.borderColor='#FC5542'" onblur="this.style.borderColor='#e2e8f0'" placeholder="e.g., Phase 1 Complete">
         </div>
         <div class="mb-6">
-            <label class="block mb-2 font-medium text-sm">Week</label>
-            <input type="number" id="milestone-week-input" class="w-full border rounded-lg p-2 text-sm" min="1">
+            <label class="block mb-2 font-bold text-sm text-slate-600">Week</label>
+            <input type="number" id="milestone-week-input" class="w-full border-2 rounded-full p-2.5 px-4 text-sm font-semibold focus:outline-none" style="border-color:#e2e8f0" onfocus="this.style.borderColor='#FC5542'" onblur="this.style.borderColor='#e2e8f0'" min="1">
         </div>
         <div class="flex justify-end gap-3">
-            <button id="delete-milestone-btn" class="hidden bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-sm">Delete</button>
-            <button id="cancel-milestone-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-4 rounded-lg text-sm">Cancel</button>
-            <button id="save-milestone-btn" class="text-white font-semibold py-2 px-4 rounded-lg text-sm" style="background:#FC5542">Save</button>
+            <button id="delete-milestone-btn" class="btn-danger hidden">Delete</button>
+            <button id="cancel-milestone-btn" class="btn-neutral">Cancel</button>
+            <button id="save-milestone-btn" class="btn-primary">Save</button>
         </div>
     </div>
 </div>
@@ -304,9 +433,9 @@
      CONFIRMATION / INFO MODAL
 ════════════════════════════════════════ -->
 <div id="confirmation-modal" class="modal-overlay hidden">
-    <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm text-center">
-        <h3 id="confirmation-title" class="text-xl font-bold mb-2">Are you sure?</h3>
-        <p id="confirmation-message" class="text-slate-500 mb-6 text-sm">This action cannot be undone.</p>
+    <div class="modal-card w-full max-w-sm text-center">
+        <h3 id="confirmation-title" class="modal-title">Are you sure?</h3>
+        <p id="confirmation-message" class="text-slate-500 mb-6 text-sm font-semibold">This action cannot be undone.</p>
         <div id="confirmation-buttons" class="flex justify-center gap-3"></div>
     </div>
 </div>
@@ -315,16 +444,27 @@
      DETAIL PANEL
 ════════════════════════════════════════ -->
 <div id="detail-panel-overlay" class="fixed inset-0 bg-black bg-opacity-40 z-30 opacity-0 pointer-events-none transition-opacity duration-300"></div>
-<div id="detail-panel" class="fixed top-0 right-0 h-full w-full max-w-lg bg-white shadow-xl z-40 transform translate-x-full transition-transform duration-300">
+<div id="detail-panel" class="fixed top-0 right-0 h-full w-full max-w-lg bg-white shadow-2xl z-40 transform translate-x-full transition-transform duration-300">
     <div class="p-6 h-full flex flex-col">
-        <div class="flex items-center justify-between mb-6">
-            <h2 id="detail-panel-title" class="text-xl font-bold"></h2>
-            <button id="detail-panel-close" class="text-slate-400 hover:text-slate-700 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <div class="flex items-center justify-between mb-6 pb-4" style="border-bottom: 2px solid var(--hibob-coral-light)">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-widest mb-1" style="color:var(--hibob-coral)">Module Details</p>
+                <h2 id="detail-panel-title" class="text-xl font-extrabold" style="color:var(--hibob-navy)"></h2>
+            </div>
+            <button id="detail-panel-close" class="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
-        <div id="detail-panel-content" class="overflow-y-auto flex-grow pr-2 space-y-5"></div>
+        <div id="detail-panel-content" class="overflow-y-auto flex-grow pr-1 space-y-0"></div>
     </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     TOAST
+════════════════════════════════════════ -->
+<div id="toast">
+    <span class="toast-dot"></span>
+    <span id="toast-message">Saved successfully</span>
 </div>
 
 <!-- External libraries -->
@@ -370,6 +510,7 @@ let dbRef = null;
 let snapshotUnsubscribe = null;
 let isPresentingMode = false;
 let pendingModules = [];
+let allSessions = [];
 
 // ── DOM refs ────────────────────────────────────────────────────
 const ganttContainerEl   = document.getElementById('gantt-chart-container');
@@ -381,12 +522,13 @@ const detailPanelTitle   = document.getElementById('detail-panel-title');
 const detailPanelContent = document.getElementById('detail-panel-content');
 const emptyStateEl       = document.getElementById('empty-state');
 const appEl              = document.getElementById('app');
+const pickerScreen       = document.getElementById('session-picker-screen');
 
 // ════════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-    setupSessionPickerListeners();
+    setupPickerListeners();
     setupAppEventListeners();
 
     onAuthStateChanged(auth, async user => {
@@ -408,66 +550,118 @@ const sessionDocRef    = id => doc(db, 'artifacts', firebaseConfig.appId, 'publi
 async function loadSessionList() {
     try {
         const snap = await getDoc(sessionsIndexRef());
-        const sessions = snap.exists() ? (snap.data().sessions || []) : [];
-        renderSessionList(sessions);
+        allSessions = snap.exists() ? (snap.data().sessions || []) : [];
+        renderSessionCards(allSessions);
     } catch(e) {
         console.error('loadSessionList:', e);
-        renderSessionList([]);
+        renderSessionCards([]);
     }
 }
 
-function renderSessionList(sessions) {
-    const listEl = document.getElementById('session-list');
-    if (!sessions.length) {
-        listEl.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">No saved timelines yet. Create one below.</p>';
-        return;
-    }
+function renderSessionCards(sessions) {
+    const grid = document.getElementById('session-cards-grid');
+    grid.innerHTML = '';
+
     sessions.sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
-    listEl.innerHTML = '';
+
     sessions.forEach(s => {
-        const date = s.updatedAt ? new Date(s.updatedAt).toLocaleDateString() : '';
-        const item = document.createElement('div');
-        item.className = 'session-item';
-        item.innerHTML = `
-            <div>
-                <p class="font-semibold text-sm">${s.customerName}</p>
-                ${date ? `<p class="text-xs text-slate-400">Updated ${date}</p>` : ''}
+        const card = document.createElement('div');
+        card.className = 'session-card';
+        card.dataset.id = s.id;
+        card.dataset.name = s.customerName;
+
+        const initials = (s.customerName||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const date = s.updatedAt ? new Date(s.updatedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+
+        card.innerHTML = `
+            <button class="session-card-delete" data-id="${s.id}" data-name="${s.customerName}" title="Delete">✕</button>
+            ${s.customerLogo ? `<img class="session-card-logo" src="${s.customerLogo}" alt="">` : `<div class="session-card-initials">${initials}</div>`}
+            <div class="session-card-name">${s.customerName}</div>
+            ${date ? `<div class="session-card-date">Updated ${date}</div>` : ''}
+        `;
+
+        card.addEventListener('click', e => {
+            if (e.target.classList.contains('session-card-delete')) return;
+            openSession(s.id, s.customerName);
+        });
+        card.querySelector('.session-card-delete').addEventListener('click', e => {
+            e.stopPropagation();
+            confirmDeleteSession(s.id, s.customerName);
+        });
+
+        grid.appendChild(card);
+    });
+
+    // New timeline card
+    const newCard = document.createElement('div');
+    newCard.className = 'new-timeline-card';
+    newCard.id = 'new-timeline-card';
+    newCard.innerHTML = `
+        <div class="plus-icon">+</div>
+        <span>New Timeline</span>
+        <div class="new-session-inline" id="new-session-inline">
+            <input type="text" id="new-session-name" placeholder="Customer name…" autocomplete="off">
+            <div style="display:flex;gap:8px">
+                <button id="cancel-new-session-btn" class="btn-neutral" style="flex:1;padding:8px 12px;font-size:0.8rem">Cancel</button>
+                <button id="confirm-new-session-btn" class="btn-primary" style="flex:1;padding:8px 12px;font-size:0.8rem">Create</button>
             </div>
-            <div class="flex items-center gap-2">
-                <button class="load-session-btn text-sm font-semibold text-white px-4 py-1.5 rounded-lg" style="background:#FC5542" data-id="${s.id}" data-name="${s.customerName}">Open</button>
-                <button class="delete-session-btn text-sm text-slate-300 hover:text-red-500 px-2 py-1.5 rounded transition-colors" data-id="${s.id}" data-name="${s.customerName}">✕</button>
-            </div>`;
-        listEl.appendChild(item);
+        </div>
+    `;
+
+    newCard.addEventListener('click', e => {
+        if (e.target.closest('.new-session-inline')) return;
+        const inline = document.getElementById('new-session-inline');
+        inline.classList.add('is-open');
+        newCard.querySelector('.plus-icon').style.display = 'none';
+        newCard.querySelector('span').style.display = 'none';
+        setTimeout(() => document.getElementById('new-session-name').focus(), 50);
     });
-    listEl.querySelectorAll('.load-session-btn').forEach(btn =>
-        btn.addEventListener('click', () => openSession(btn.dataset.id, btn.dataset.name)));
-    listEl.querySelectorAll('.delete-session-btn').forEach(btn =>
-        btn.addEventListener('click', () => confirmDeleteSession(btn.dataset.id, btn.dataset.name)));
+
+    grid.appendChild(newCard);
 }
 
-function setupSessionPickerListeners() {
-    document.getElementById('new-session-btn').addEventListener('click', () => {
-        document.getElementById('new-session-modal').classList.remove('hidden');
-        document.getElementById('new-session-name').focus();
+function setupPickerListeners() {
+    document.addEventListener('click', e => {
+        const cancelBtn = e.target.closest('#cancel-new-session-btn');
+        const confirmBtn = e.target.closest('#confirm-new-session-btn');
+        if (cancelBtn) { closeNewSessionInline(); return; }
+        if (confirmBtn) { createNewSession(); return; }
     });
-    document.getElementById('cancel-new-session-btn').addEventListener('click', closeNewSessionModal);
-    document.getElementById('confirm-new-session-btn').addEventListener('click', createNewSession);
-    document.getElementById('new-session-name').addEventListener('keydown', e => { if (e.key==='Enter') createNewSession(); });
+    document.addEventListener('keydown', e => {
+        const nameInput = document.getElementById('new-session-name');
+        if (e.key === 'Enter' && document.activeElement === nameInput) createNewSession();
+        if (e.key === 'Escape' && document.getElementById('new-session-inline')?.classList.contains('is-open')) closeNewSessionInline();
+    });
+    document.getElementById('picker-search-input').addEventListener('input', e => {
+        const q = e.target.value.toLowerCase();
+        const filtered = allSessions.filter(s => s.customerName.toLowerCase().includes(q));
+        renderSessionCards(filtered);
+    });
 }
 
-function closeNewSessionModal() {
-    document.getElementById('new-session-modal').classList.add('hidden');
-    document.getElementById('new-session-name').value = '';
+function closeNewSessionInline() {
+    const inline = document.getElementById('new-session-inline');
+    if (!inline) return;
+    inline.classList.remove('is-open');
+    const card = document.getElementById('new-timeline-card');
+    if (card) {
+        card.querySelector('.plus-icon').style.display = '';
+        card.querySelector('span').style.display = '';
+    }
+    const input = document.getElementById('new-session-name');
+    if (input) input.value = '';
 }
 
 async function createNewSession() {
-    const name = document.getElementById('new-session-name').value.trim();
-    if (!name) return;
+    const nameInput = document.getElementById('new-session-name');
+    if (!nameInput) return;
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
     const sessionId = `session_${Date.now()}`;
     const now = Date.now();
     await setDoc(sessionDocRef(sessionId), { customerName:name, customerLogo:null, tasks:[], milestones:[], totalWeeks:12, createdAt:now, updatedAt:now });
     await updateSessionsIndex({ id:sessionId, customerName:name, updatedAt:now });
-    closeNewSessionModal();
+    closeNewSessionInline();
     openSession(sessionId, name);
 }
 
@@ -485,7 +679,7 @@ async function openSession(sessionId, customerName) {
     session = { sessionId, customerName, customerLogo: null };
     dbRef = sessionDocRef(sessionId);
 
-    document.getElementById('session-picker-modal').classList.add('hidden');
+    pickerScreen.classList.add('hidden');
     appEl.classList.remove('hidden');
     document.getElementById('header-customer-name').textContent = customerName;
 
@@ -526,7 +720,7 @@ function switchCustomer() {
     state = { tasks:[], milestones:[], totalWeeks:12 };
     session = { sessionId:null, customerName:'', customerLogo:null };
     appEl.classList.add('hidden');
-    document.getElementById('session-picker-modal').classList.remove('hidden');
+    pickerScreen.classList.remove('hidden');
     document.getElementById('customer-logo-container').classList.add('hidden');
     document.getElementById('customer-logo-container').style.display = '';
     document.getElementById('logo-upload-label').textContent = 'Upload Logo';
@@ -567,10 +761,23 @@ function showCustomerLogo(base64) {
 function togglePresentationMode() {
     isPresentingMode = !isPresentingMode;
     const btn = document.getElementById('present-toggle-btn');
-    document.getElementById('present-toggle-label').textContent = isPresentingMode ? 'Edit' : 'Present';
-    btn.style.background = isPresentingMode ? '#64748b' : '#FC5542';
+    const label = document.getElementById('present-toggle-label');
+    label.textContent = isPresentingMode ? 'Edit' : 'Present';
+    btn.style.background = isPresentingMode ? '#475569' : '';
     if (isPresentingMode) document.body.classList.add('is-presenting');
     else document.body.classList.remove('is-presenting');
+}
+
+// ════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════
+let toastTimer = null;
+function showToast(message = 'Saved successfully') {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-message').textContent = message;
+    toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -607,7 +814,7 @@ function renderModules() {
     const available = allModules.filter(m => !added.has(m));
     moduleListEl.innerHTML = '';
     if (!available.length) {
-        moduleListEl.innerHTML = '<p class="text-xs text-slate-400 py-1">All modules added.</p>';
+        moduleListEl.innerHTML = '<p class="text-xs text-slate-400 font-semibold py-1">All modules added.</p>';
         return;
     }
     available.forEach(mod => {
@@ -631,9 +838,9 @@ function renderGanttChart() {
 
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
-    headerRow.innerHTML = `<th class="sticky left-0 bg-white w-56 p-3 text-left font-semibold border-b z-20 text-sm">Task</th>`;
+    headerRow.innerHTML = `<th class="sticky left-0 bg-white w-56 p-3 text-left font-extrabold border-b z-20 text-xs uppercase tracking-wider text-slate-500">Task</th>`;
     for (let i = 1; i <= state.totalWeeks; i++) {
-        headerRow.innerHTML += `<th class="p-2 text-slate-400 font-medium border-b border-l text-xs">W${i}</th>`;
+        headerRow.innerHTML += `<th class="p-2 text-slate-400 font-bold border-b border-l text-xs">W${i}</th>`;
     }
     thead.appendChild(headerRow);
     table.appendChild(thead);
@@ -650,7 +857,6 @@ function renderGanttChart() {
 function renderTaskRowRecursive(task, level, tbody, index) {
     const tr = document.createElement('tr');
     tr.dataset.taskId = task.id;
-    if (task.details) tr.classList.add('cursor-pointer', 'hover:bg-slate-50');
 
     const isParent = task.children && task.children.length > 0;
     if (level === 0) { tr.dataset.index = index; tr.draggable = true; }
@@ -672,14 +878,25 @@ function renderTaskRowRecursive(task, level, tbody, index) {
         nameContainer.innerHTML += `<span class="w-4 inline-block ml-2"></span>`;
     }
 
-    nameContainer.innerHTML += `<span class="font-medium text-sm">${task.name}</span>`;
+    nameContainer.innerHTML += `<span class="font-bold text-sm">${task.name}</span>`;
+
+    // ⓘ info icon — only for tasks with details
+    if (task.details) {
+        const infoBtn = document.createElement('button');
+        infoBtn.className = 'task-info-btn';
+        infoBtn.dataset.taskId = task.id;
+        infoBtn.title = 'View module details';
+        infoBtn.textContent = 'i';
+        nameContainer.appendChild(infoBtn);
+    }
+
     nameCell.appendChild(nameContainer);
     tr.appendChild(nameCell);
 
     const ganttCell = document.createElement('td');
     ganttCell.colSpan = state.totalWeeks;
     ganttCell.className = 'relative p-0 border-b';
-    ganttCell.style.height = '56px';
+    ganttCell.style.height = '52px';
 
     for (let i = 0; i < state.totalWeeks; i++) {
         const line = document.createElement('div');
@@ -715,7 +932,7 @@ function createGanttBar(task) {
     bar.dataset.taskId = task.id;
 
     const label = document.createElement('span');
-    label.className = 'gantt-bar-label text-xs font-medium';
+    label.className = 'gantt-bar-label text-xs font-bold';
     label.textContent = task.name;
     bar.appendChild(label);
 
@@ -763,12 +980,7 @@ function setupAppEventListeners() {
     document.getElementById('header-export-pdf-btn').addEventListener('click', exportChartAsPdf);
     document.getElementById('present-toggle-btn').addEventListener('click', togglePresentationMode);
     document.getElementById('switch-customer-btn').addEventListener('click', switchCustomer);
-    document.getElementById('save-btn').addEventListener('click', () => {
-        saveState();
-        const btn = document.getElementById('save-btn');
-        btn.textContent = 'Saved ✓';
-        setTimeout(() => btn.textContent = 'Save ✓', 2000);
-    });
+    document.getElementById('save-btn').addEventListener('click', () => { saveState(); showToast('Timeline saved ✓'); });
     document.getElementById('detail-panel-close').addEventListener('click', closeDetailPanel);
     detailPanelOverlay.addEventListener('click', closeDetailPanel);
     document.getElementById('cancel-duration-btn').addEventListener('click', () => {
@@ -785,12 +997,20 @@ function setupAppEventListeners() {
     });
 
     ganttContainerEl.addEventListener('click', e => {
+        // Milestone click
         const ms = e.target.closest('.milestone-symbol');
         if (ms) { handleOpenMilestoneModal(ms.dataset.milestoneId); return; }
+        // Expand/collapse toggle
         const tog = e.target.closest('.toggle-expand');
         if (tog) { handleToggleExpand(tog.closest('tr').dataset.taskId); return; }
-        const row = e.target.closest('tr[data-task-id]');
-        if (row) { const t = findTaskById(state.tasks, row.dataset.taskId); if (t && t.details) openDetailPanel(t); }
+        // ⓘ info icon — deliberately open detail panel
+        const infoBtn = e.target.closest('.task-info-btn');
+        if (infoBtn) {
+            e.stopPropagation();
+            const t = findTaskById(state.tasks, infoBtn.dataset.taskId);
+            if (t && t.details) openDetailPanel(t);
+            return;
+        }
     });
 }
 
@@ -821,15 +1041,15 @@ function handleAddModulesClick() {
         const tmpl = templates.find(t => t.name === mod);
         const defDur = tmpl ? tmpl.duration : 8;
         const row = document.createElement('div');
-        row.className = 'flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50';
+        row.className = 'flex items-center justify-between gap-4 p-3 rounded-2xl bg-slate-50';
         row.innerHTML = `
             <div class="flex items-center gap-3">
                 <div class="w-3 h-3 rounded-full flex-shrink-0" style="background:${moduleColorHex[mod]||'#94a3b8'}"></div>
-                <span class="font-medium text-sm">${mod}</span>
+                <span class="font-bold text-sm">${mod}</span>
             </div>
             <div class="flex items-center gap-2">
-                <input type="number" class="module-duration-input border rounded-lg w-16 p-2 text-sm text-center" value="${defDur}" min="1" max="52" data-module="${mod}">
-                <span class="text-xs text-slate-400">wks</span>
+                <input type="number" class="module-duration-input border-2 rounded-full w-16 p-2 text-sm text-center font-bold focus:outline-none" style="border-color:#e2e8f0" onfocus="this.style.borderColor='#FC5542'" onblur="this.style.borderColor='#e2e8f0'" value="${defDur}" min="1" max="52" data-module="${mod}">
+                <span class="text-xs text-slate-400 font-semibold">wks</span>
             </div>`;
         listEl.appendChild(row);
     });
@@ -911,7 +1131,8 @@ function openDetailPanel(task) {
     detailPanelContent.innerHTML = '';
     task.details.sections.forEach(s => {
         const el = document.createElement('div');
-        el.innerHTML = `<h3 class="font-semibold text-sm mb-1.5" style="color:#FC5542">${s.heading}</h3><p class="text-slate-600 text-sm leading-relaxed">${s.content}</p>`;
+        el.className = 'detail-section';
+        el.innerHTML = `<div class="detail-section-heading">${s.heading}</div><div class="detail-section-content">${s.content}</div>`;
         detailPanelContent.appendChild(el);
     });
     detailPanel.classList.add('is-open');
@@ -931,8 +1152,8 @@ function showConfirmationModal(title, message, onConfirm) {
     modal.querySelector('#confirmation-title').textContent = title;
     modal.querySelector('#confirmation-message').textContent = message;
     modal.querySelector('#confirmation-buttons').innerHTML = `
-        <button id="confirm-cancel" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-5 rounded-lg text-sm">Cancel</button>
-        <button id="confirm-ok" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-5 rounded-lg text-sm">Delete</button>`;
+        <button id="confirm-cancel" class="btn-neutral">Cancel</button>
+        <button id="confirm-ok" class="btn-danger">Delete</button>`;
     modal.classList.remove('hidden');
     document.getElementById('confirm-ok').onclick = () => { onConfirm(); hideConfirmationModal(); };
     document.getElementById('confirm-cancel').onclick = hideConfirmationModal;
@@ -942,7 +1163,7 @@ function showInfoModal(title, message) {
     const modal = document.getElementById('confirmation-modal');
     modal.querySelector('#confirmation-title').textContent = title;
     modal.querySelector('#confirmation-message').textContent = message;
-    modal.querySelector('#confirmation-buttons').innerHTML = `<button id="info-ok" class="text-white font-semibold py-2 px-5 rounded-lg text-sm" style="background:#FC5542">OK</button>`;
+    modal.querySelector('#confirmation-buttons').innerHTML = `<button id="info-ok" class="btn-primary">OK</button>`;
     modal.classList.remove('hidden');
     document.getElementById('info-ok').onclick = hideConfirmationModal;
 }
